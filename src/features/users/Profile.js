@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import API from '../../app/api';
 import {
   Container,
   Typography,
@@ -59,17 +60,8 @@ const Profile = () => {
 
   const fetchProfileData = async () => {
     try {
-      const response = await fetch(`/api/users/profile/${user._id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile data');
-      }
-
-      const data = await response.json();
+      const response = await API.get(`/users/profile/${user._id}`);
+      const data = response.data;
       setProfileData(data);
       setEditFormData({
         name: data.name,
@@ -77,7 +69,7 @@ const Profile = () => {
         department: data.department
       });
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }
@@ -101,26 +93,14 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`/api/users/${user._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(editFormData)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
-
-      const updatedData = await response.json();
+      const response = await API.put(`/users/${user._id}`, editFormData);
+      const updatedData = response.data;
       setProfileData(updatedData);
       setOpenEditDialog(false);
       // Refresh profile data
       fetchProfileData();
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     }
   };
 
