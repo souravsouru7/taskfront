@@ -25,6 +25,7 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Checkbox,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -32,14 +33,17 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { fetchProjectById, updateProject, deleteProject } from './projectSlice';
+import { fetchProjectById, updateProject, deleteProject, addMilestone, updateMilestoneStatus, clearCurrentProject } from './projectSlice';
 import { fetchUsers } from '../users/userSlice';
 import { createTask, deleteTask, updateTask } from '../tasks/tasksSlice';
+import { useTheme, useMediaQuery } from '@mui/material';
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { currentProject: project, loading: projectLoading, error: projectError } = useSelector((state) => state.projects);
   const { users, loading: usersLoading } = useSelector((state) => state.users);
   const { loading: tasksLoading, error: tasksError } = useSelector((state) => state.tasks);
@@ -62,18 +66,31 @@ const ProjectDetail = () => {
     description: '',
     client: { name: '', email: '', phone: '' },
   });
+  const [openMilestoneDialog, setOpenMilestoneDialog] = useState(false);
+  const [milestoneForm, setMilestoneForm] = useState({
+    title: '',
+    description: '',
+    dueDate: new Date(new Date().setDate(new Date().getDate() + 7)),
+  });
 
   useEffect(() => {
-    dispatch(fetchProjectById(id));
-    dispatch(fetchUsers());
+    if (id) {
+      dispatch(fetchProjectById(id));
+      dispatch(fetchUsers());
+    }
+
+    // Cleanup function
+    return () => {
+      dispatch(clearCurrentProject());
+    };
   }, [dispatch, id]);
 
   useEffect(() => {
-    if (project) {
+    if (project && project._id) {
       setEditForm({
         name: project.name,
         description: project.description,
-        client: project.client,
+        client: project.client || { name: '', email: '', phone: '' },
       });
     }
   }, [project]);
@@ -201,7 +218,47 @@ const ProjectDetail = () => {
     }
   };
 
-  if (projectLoading || usersLoading) {
+  const handleOpenMilestoneDialog = () => {
+    setMilestoneForm({
+      title: '',
+      description: '',
+      dueDate: new Date(new Date().setDate(new Date().getDate() + 7)),
+    });
+    setOpenMilestoneDialog(true);
+  };
+
+  const handleCloseMilestoneDialog = () => {
+    setOpenMilestoneDialog(false);
+  };
+
+  const handleMilestoneChange = (e) => {
+    const { name, value } = e.target;
+    setMilestoneForm({
+      ...milestoneForm,
+      [name]: value,
+    });
+  };
+
+  const handleMilestoneDateChange = (date) => {
+    setMilestoneForm({
+      ...milestoneForm,
+      dueDate: date,
+    });
+  };
+
+  const handleMilestoneSubmit = async (e) => {
+    e.preventDefault();
+    await dispatch(addMilestone({ projectId: id, milestone: milestoneForm }));
+    handleCloseMilestoneDialog();
+    dispatch(fetchProjectById(id));
+  };
+
+  const handleMilestoneStatusChange = async (milestoneId, completed) => {
+    await dispatch(updateMilestoneStatus({ projectId: id, milestoneId, completed }));
+    dispatch(fetchProjectById(id));
+  };
+
+  if (projectLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
         <CircularProgress />
@@ -212,142 +269,293 @@ const ProjectDetail = () => {
   if (projectError) {
     return (
       <Container>
-        <Alert severity="error">{projectError}</Alert>
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {projectError}
+        </Alert>
+        <Button variant="contained" onClick={() => navigate('/projects')} sx={{ mt: 2 }}>
+          Back to Projects
+        </Button>
       </Container>
     );
   }
 
-  if (!project) {
-    return null;
+  if (!project || !project._id) {
+    return (
+      <Container>
+        <Alert severity="warning" sx={{ mt: 2 }}>
+          Project not found
+        </Alert>
+        <Button variant="contained" onClick={() => navigate('/projects')} sx={{ mt: 2 }}>
+          Back to Projects
+        </Button>
+      </Container>
+    );
   }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-              <Typography variant="h4">{project.name}</Typography>
-              <Box>
-                {user?.role === 'admin' && (
-                  <>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      startIcon={<EditIcon />}
-                      onClick={handleOpenEditDialog}
-                      sx={{ mr: 2 }}
-                    >
-                      Edit Project
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      startIcon={<DeleteIcon />}
-                      onClick={handleOpenDeleteDialog}
-                      sx={{ mr: 2 }}
-                    >
-                      Delete Project
-                    </Button>
-                  </>
-                )}
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<AddIcon />}
-                  onClick={() => handleOpenTaskDialog()}
-                >
-                  Add Task
-                </Button>
-              </Box>
+      {projectLoading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+          <CircularProgress />
+        </Box>
+      ) : projectError ? (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {projectError}
+        </Alert>
+      ) : project ? (
+        <Box>
+          <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
+            <Box>
+              <Typography variant="h4" component="h1" gutterBottom>
+                {project.name}
+              </Typography>
+              <Typography variant="subtitle1" color="textSecondary">
+                Project ID: {project._id}
+              </Typography>
             </Box>
-            
-            <Typography variant="subtitle1" gutterBottom>
-              Client: {project.client?.name || 'No client'}
-            </Typography>
-            <Typography variant="body1" paragraph>
-              {project.description}
-            </Typography>
-            
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-              Tasks
-            </Typography>
-            
-            <List>
-              {(project.tasks || []).map((task) => (
-                <ListItem
-                  key={task._id}
-                  divider
-                  sx={{
-                    backgroundColor: task.status === 'completed' ? '#f5f5f5' : 'inherit',
-                  }}
-                >
-                  <ListItemText
-                    primary={
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography variant="subtitle1">{task.title}</Typography>
-                        <Chip
-                          label={task.priority}
-                          size="small"
-                          color={
-                            task.priority === 'urgent'
-                              ? 'error'
-                              : task.priority === 'high'
-                              ? 'warning'
-                              : 'default'
-                          }
-                        />
-                        <Chip
-                          label={task.status}
-                          size="small"
-                          color={task.status === 'completed' ? 'success' : 'default'}
-                        />
-                      </Box>
-                    }
-                    secondary={
-                      <>
-                        <Typography variant="body2" component="span">
-                          {task.description}
-                        </Typography>
-                        <br />
-                        <Typography variant="caption">
-                          Assigned To: {task.assignedTo?.name || 'Unassigned'} | 
-                          Due: {new Date(task.dueDate).toLocaleDateString()}
-                        </Typography>
-                      </>
-                    }
-                  />
-                  <ListItemSecondaryAction>
-                    <IconButton
-                      edge="end"
-                      aria-label="edit"
-                      onClick={() => handleOpenTaskDialog(task)}
+            <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleOpenEditDialog}
+                fullWidth={isMobile}
+              >
+                Edit Project
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={handleOpenDeleteDialog}
+                fullWidth={isMobile}
+              >
+                Delete Project
+              </Button>
+            </Box>
+          </Box>
+
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <Paper sx={{ p: 3, mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Project Details
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="subtitle2" color="textSecondary">
+                      Description
+                    </Typography>
+                    <Typography variant="body1">
+                      {project.description || 'No description provided'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="subtitle2" color="textSecondary">
+                      Status
+                    </Typography>
+                    <Chip
+                      label={project.status}
+                      color={getStatusColor(project.status)}
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="subtitle2" color="textSecondary">
+                      Start Date
+                    </Typography>
+                    <Typography variant="body1">
+                      {new Date(project.startDate).toLocaleDateString()}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="subtitle2" color="textSecondary">
+                      End Date
+                    </Typography>
+                    <Typography variant="body1">
+                      {new Date(project.endDate).toLocaleDateString()}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              <Paper sx={{ p: 3, mb: 3 }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="h6">
+                    Tasks
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    onClick={() => handleOpenTaskDialog()}
+                  >
+                    Add Task
+                  </Button>
+                </Box>
+                <List>
+                  {project.tasks?.map((task) => (
+                    <ListItem
+                      key={task._id}
+                      divider
+                      sx={{
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        alignItems: { xs: 'flex-start', sm: 'center' },
+                        gap: { xs: 1, sm: 0 }
+                      }}
                     >
-                      <EditIcon />
-                    </IconButton>
-                    {user?.role === 'admin' && (
-                      <IconButton
-                        edge="end"
-                        aria-label="delete"
-                        onClick={() => handleDeleteTask(task._id)}
+                      <ListItemText
+                        primary={task.title}
+                        secondary={
+                          <Box component="span" sx={{ display: 'block' }}>
+                            <Typography variant="body2" component="span">
+                              Assigned to: {task.assignedTo?.name || 'Unassigned'}
+                            </Typography>
+                            <Typography variant="body2" component="span" sx={{ display: 'block' }}>
+                              Due: {new Date(task.dueDate).toLocaleDateString()}
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                      <ListItemSecondaryAction
+                        sx={{
+                          position: { xs: 'relative', sm: 'absolute' },
+                          right: { xs: 0, sm: 16 },
+                          top: { xs: 'auto', sm: '50%' },
+                          transform: { xs: 'none', sm: 'translateY(-50%)' },
+                          mt: { xs: 2, sm: 0 }
+                        }}
                       >
-                        <DeleteIcon />
-                      </IconButton>
-                    )}
-                  </ListItemSecondaryAction>
-                </ListItem>
-              ))}
-              {(!project.tasks || project.tasks.length === 0) && (
-                <ListItem>
-                  <ListItemText
-                    primary="No tasks found"
-                    secondary="Add a new task to get started"
+                        <IconButton
+                          edge="end"
+                          aria-label="edit"
+                          onClick={() => handleOpenTaskDialog(task)}
+                          size="small"
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton
+                          edge="end"
+                          aria-label="delete"
+                          onClick={() => handleDeleteTask(task._id)}
+                          size="small"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <Paper sx={{ p: 3, mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Client Information
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="textSecondary">
+                      Name
+                    </Typography>
+                    <Typography variant="body1">
+                      {project.client?.name || 'N/A'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="textSecondary">
+                      Email
+                    </Typography>
+                    <Typography variant="body1">
+                      {project.client?.email || 'N/A'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="textSecondary">
+                      Phone
+                    </Typography>
+                    <Typography variant="body1">
+                      {project.client?.phone || 'N/A'}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              <Paper sx={{ p: 3 }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="h6">
+                    Team Members
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    onClick={handleOpenTeamDialog}
+                  >
+                    Manage Team
+                  </Button>
+                </Box>
+                <List>
+                  {project.team?.map((member) => (
+                    <ListItem key={member._id} divider>
+                      <ListItemText
+                        primary={member.name}
+                        secondary={member.role}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+      ) : null}
+
+      {/* Milestones Section */}
+      <Grid item xs={12} md={6} sx={{ mt: 3 }}>
+        <Paper sx={{ p: 3 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h6">Milestones</Typography>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleOpenMilestoneDialog}
+            >
+              Add Milestone
+            </Button>
+          </Box>
+          <List>
+            {project.milestones?.map((milestone) => (
+              <ListItem key={milestone._id}>
+                <ListItemText
+                  primary={milestone.title}
+                  secondary={
+                    <>
+                      <Typography variant="body2" color="text.secondary">
+                        {milestone.description}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Due: {new Date(milestone.dueDate).toLocaleDateString()}
+                      </Typography>
+                      {milestone.completed && (
+                        <Typography variant="body2" color="success.main">
+                          Completed on: {new Date(milestone.completedAt).toLocaleDateString()}
+                        </Typography>
+                      )}
+                    </>
+                  }
+                />
+                <ListItemSecondaryAction>
+                  <Checkbox
+                    edge="end"
+                    checked={milestone.completed}
+                    onChange={(e) => handleMilestoneStatusChange(milestone._id, e.target.checked)}
                   />
-                </ListItem>
-              )}
-            </List>
-          </Paper>
-        </Grid>
+                </ListItemSecondaryAction>
+              </ListItem>
+            ))}
+          </List>
+        </Paper>
       </Grid>
 
       {/* Task Dialog */}
@@ -513,6 +721,49 @@ const ProjectDetail = () => {
           <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
           <Button onClick={handleDeleteProject} variant="contained" color="error">
             Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Milestone Dialog */}
+      <Dialog open={openMilestoneDialog} onClose={handleCloseMilestoneDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New Milestone</DialogTitle>
+        <DialogContent>
+          <form onSubmit={handleMilestoneSubmit}>
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Title"
+              name="title"
+              value={milestoneForm.title}
+              onChange={handleMilestoneChange}
+              required
+            />
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Description"
+              name="description"
+              value={milestoneForm.description}
+              onChange={handleMilestoneChange}
+              multiline
+              rows={3}
+              required
+            />
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="Due Date"
+                value={milestoneForm.dueDate}
+                onChange={handleMilestoneDateChange}
+                renderInput={(params) => <TextField {...params} fullWidth margin="normal" required />}
+              />
+            </LocalizationProvider>
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMilestoneDialog}>Cancel</Button>
+          <Button onClick={handleMilestoneSubmit} variant="contained" color="primary">
+            Add Milestone
           </Button>
         </DialogActions>
       </Dialog>

@@ -5,8 +5,9 @@ const API = axios.create({
   baseURL: 'https://api.bakerycrm.shop/api',
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
-  timeout: 10000,
+  timeout: 30000, // Increased timeout to 30 seconds
   withCredentials: true
 });
 
@@ -19,9 +20,16 @@ API.interceptors.request.use(
       config.headers['Authorization'] = `Bearer ${token}`;
     }
     
+    // Add timestamp to prevent caching
+    config.params = {
+      ...config.params,
+      _t: new Date().getTime()
+    };
+    
     return config;
   },
   (error) => {
+    console.error('Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -32,12 +40,28 @@ API.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Log the error for debugging
+    console.error('API Error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      config: error.config
+    });
+
     // Handle authentication errors
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
+    }
+    
+    // Handle network errors
+    if (error.code === 'ECONNABORTED') {
+      error.response = {
+        data: {
+          message: 'Request timeout. Please check your internet connection.'
+        }
+      };
     }
     
     // Ensure error object has the expected structure

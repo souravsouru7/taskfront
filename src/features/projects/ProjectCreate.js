@@ -21,10 +21,14 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { createProject } from './projectSlice';
 import { fetchUsers } from '../users/userSlice';
+import { useTheme } from '@mui/material/styles';
+import { useMediaQuery } from '@mui/material';
 
 const ProjectCreate = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { users, loading: usersLoading } = useSelector((state) => state.users);
   const { loading, error } = useSelector((state) => state.projects);
 
@@ -122,7 +126,7 @@ const ProjectCreate = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Paper sx={{ p: 3 }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 } }}>
         <Typography variant="h4" gutterBottom>
           Create New Project
         </Typography>
@@ -145,6 +149,7 @@ const ProjectCreate = () => {
                 onChange={handleChange}
                 error={!!formErrors.name}
                 helperText={formErrors.name}
+                size={isMobile ? "small" : "medium"}
               />
             </Grid>
             
@@ -160,10 +165,17 @@ const ProjectCreate = () => {
                 onChange={handleChange}
                 error={!!formErrors.description}
                 helperText={formErrors.description}
+                size={isMobile ? "small" : "medium"}
               />
             </Grid>
             
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Client Information
+              </Typography>
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
               <TextField
                 required
                 fullWidth
@@ -173,10 +185,11 @@ const ProjectCreate = () => {
                 onChange={handleChange}
                 error={!!formErrors['client.name']}
                 helperText={formErrors['client.name']}
+                size={isMobile ? "small" : "medium"}
               />
             </Grid>
             
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 required
                 fullWidth
@@ -187,10 +200,11 @@ const ProjectCreate = () => {
                 onChange={handleChange}
                 error={!!formErrors['client.email']}
                 helperText={formErrors['client.email']}
+                size={isMobile ? "small" : "medium"}
               />
             </Grid>
             
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 required
                 fullWidth
@@ -200,10 +214,17 @@ const ProjectCreate = () => {
                 onChange={handleChange}
                 error={!!formErrors['client.phone']}
                 helperText={formErrors['client.phone']}
+                size={isMobile ? "small" : "medium"}
               />
             </Grid>
             
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Project Details
+              </Typography>
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DatePicker
                   label="Start Date"
@@ -214,14 +235,15 @@ const ProjectCreate = () => {
                       fullWidth: true,
                       required: true,
                       error: !!formErrors.startDate,
-                      helperText: formErrors.startDate
+                      helperText: formErrors.startDate,
+                      size: isMobile ? "small" : "medium"
                     }
                   }}
                 />
               </LocalizationProvider>
             </Grid>
             
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} sm={6}>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DatePicker
                   label="End Date"
@@ -232,15 +254,16 @@ const ProjectCreate = () => {
                       fullWidth: true,
                       required: true,
                       error: !!formErrors.endDate,
-                      helperText: formErrors.endDate
+                      helperText: formErrors.endDate,
+                      size: isMobile ? "small" : "medium"
                     }
                   }}
                 />
               </LocalizationProvider>
             </Grid>
             
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required error={!!formErrors.status}>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required error={!!formErrors.status} size={isMobile ? "small" : "medium"}>
                 <InputLabel>Status</InputLabel>
                 <Select
                   name="status"
@@ -249,15 +272,14 @@ const ProjectCreate = () => {
                   label="Status"
                 >
                   <MenuItem value="planning">Planning</MenuItem>
-                  <MenuItem value="in-progress">In Progress</MenuItem>
-                  <MenuItem value="review">Review</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
+                  <MenuItem value="active">Active</MenuItem>
                   <MenuItem value="on-hold">On Hold</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 required
                 fullWidth
@@ -268,11 +290,12 @@ const ProjectCreate = () => {
                 onChange={handleChange}
                 error={!!formErrors.budget}
                 helperText={formErrors.budget}
+                size={isMobile ? "small" : "medium"}
               />
             </Grid>
             
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required error={!!formErrors.projectManager}>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required error={!!formErrors.projectManager} size={isMobile ? "small" : "medium"}>
                 <InputLabel>Project Manager</InputLabel>
                 <Select
                   name="projectManager"
@@ -280,7 +303,7 @@ const ProjectCreate = () => {
                   onChange={handleChange}
                   label="Project Manager"
                 >
-                  {users.map((user) => (
+                  {users?.map((user) => (
                     <MenuItem key={user._id} value={user._id}>
                       {user.name}
                     </MenuItem>
@@ -289,8 +312,8 @@ const ProjectCreate = () => {
               </FormControl>
             </Grid>
             
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
                 <InputLabel>Team Members</InputLabel>
                 <Select
                   multiple
@@ -298,12 +321,8 @@ const ProjectCreate = () => {
                   value={formData.team}
                   onChange={handleMultiSelectChange}
                   label="Team Members"
-                  renderValue={(selected) => {
-                    const selectedUsers = users.filter(user => selected.includes(user._id));
-                    return selectedUsers.map(user => user.name).join(', ');
-                  }}
                 >
-                  {users.map((user) => (
+                  {users?.map((user) => (
                     <MenuItem key={user._id} value={user._id}>
                       {user.name}
                     </MenuItem>
@@ -313,11 +332,11 @@ const ProjectCreate = () => {
             </Grid>
             
             <Grid item xs={12}>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+              <Box display="flex" justifyContent="flex-end" gap={2} mt={2}>
                 <Button
                   variant="outlined"
                   onClick={() => navigate('/projects')}
-                  disabled={loading}
+                  fullWidth={isMobile}
                 >
                   Cancel
                 </Button>
@@ -326,6 +345,7 @@ const ProjectCreate = () => {
                   variant="contained"
                   color="primary"
                   disabled={loading}
+                  fullWidth={isMobile}
                 >
                   {loading ? <CircularProgress size={24} /> : 'Create Project'}
                 </Button>

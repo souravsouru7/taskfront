@@ -120,9 +120,9 @@ export const addMilestone = createAsyncThunk(
 
 export const updateMilestoneStatus = createAsyncThunk(
   'projects/updateMilestoneStatus',
-  async ({ projectId, milestoneId, status }, { rejectWithValue }) => {
+  async ({ projectId, milestoneId, completed }, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.put(`/projects/${projectId}/milestones/${milestoneId}`, { status });
+      const response = await axiosInstance.put(`/projects/${projectId}/milestones/${milestoneId}`, { completed });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update milestone status');
@@ -147,6 +147,7 @@ const initialState = {
   currentProject: null,
   loading: false,
   error: null,
+  status: 'idle',
 };
 
 const projectSlice = createSlice({
@@ -159,6 +160,15 @@ const projectSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    clearCurrentProject: (state) => {
+      state.currentProject = null;
+    },
+    clearProjects: (state) => {
+      state.projects = [];
+      state.currentProject = null;
+      state.status = 'idle';
+      state.error = null;
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -166,13 +176,33 @@ const projectSlice = createSlice({
       .addCase(fetchProjects.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.status = 'loading';
       })
       .addCase(fetchProjects.fulfilled, (state, action) => {
         state.loading = false;
         state.projects = action.payload;
+        state.status = 'succeeded';
+        state.error = null;
       })
       .addCase(fetchProjects.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload;
+        state.status = 'failed';
+      })
+      // Fetch Project By Id
+      .addCase(fetchProjectById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.currentProject = null;
+      })
+      .addCase(fetchProjectById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentProject = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchProjectById.rejected, (state, action) => {
+        state.loading = false;
+        state.currentProject = null;
         state.error = action.payload;
       })
       // Fetch User Projects
@@ -311,22 +341,9 @@ const projectSlice = createSlice({
       .addCase(updateMilestoneStatus.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      })
-      // Fetch Project By ID
-      .addCase(fetchProjectById.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchProjectById.fulfilled, (state, action) => {
-        state.loading = false;
-        state.currentProject = action.payload;
-      })
-      .addCase(fetchProjectById.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
       });
   },
 });
 
-export const { setCurrentProject, clearError } = projectSlice.actions;
+export const { setCurrentProject, clearError, clearCurrentProject, clearProjects } = projectSlice.actions;
 export default projectSlice.reducer; 

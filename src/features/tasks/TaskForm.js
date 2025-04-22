@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { createTask, updateTask, fetchTaskById } from './tasksSlice';
-import { fetchProjects } from '../projects/projectsSlice';
+import { fetchProjects } from '../projects/projectSlice';
 import { fetchUsers } from '../users/usersSlice';
 import {
     Box,

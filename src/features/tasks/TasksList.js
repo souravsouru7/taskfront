@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { fetchTasks, fetchUserTasks, deleteTask } from './tasksSlice';
-import { fetchProjects } from '../projects/projectsSlice';
+import { fetchProjects } from '../projects/projectSlice';
 import { fetchUsers } from '../users/usersSlice';
 import {
     Box,
@@ -27,7 +27,13 @@ import {
     CircularProgress,
     Alert,
     Tabs,
-    Tab
+    Tab,
+    useTheme,
+    useMediaQuery,
+    Stack,
+    Card,
+    CardContent,
+    CardActions
 } from '@mui/material';
 import {
     Edit as EditIcon,
@@ -39,6 +45,8 @@ import { format } from 'date-fns';
 
 const TasksList = () => {
     const dispatch = useDispatch();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { tasks, status, error } = useSelector(state => state.tasks);
     const { projects } = useSelector(state => state.projects);
     const { users } = useSelector(state => state.users);
@@ -155,8 +163,14 @@ const TasksList = () => {
     }
 
     return (
-        <Box sx={{ mt: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ mt: 2, p: { xs: 1, sm: 2 } }}>
+            <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                mb: 2,
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: { xs: 2, sm: 0 }
+            }}>
                 <Typography variant="h4" component="h1" gutterBottom>
                     {isAdmin ? 'All Tasks' : 'My Tasks'}
                 </Typography>
@@ -166,6 +180,7 @@ const TasksList = () => {
                         color="primary"
                         component={Link}
                         to="/tasks/create"
+                        fullWidth={isMobile}
                     >
                         Create Task
                     </Button>
@@ -185,6 +200,7 @@ const TasksList = () => {
                 value={searchTerm}
                 onChange={handleSearchChange}
                 sx={{ mb: 2 }}
+                size={isMobile ? "small" : "medium"}
                 InputProps={{
                     startAdornment: (
                         <InputAdornment position="start">
@@ -198,8 +214,9 @@ const TasksList = () => {
                 <Tabs 
                     value={tabValue} 
                     onChange={handleTabChange}
-                    variant="scrollable"
+                    variant={isMobile ? "scrollable" : "standard"}
                     scrollButtons="auto"
+                    allowScrollButtonsMobile
                 >
                     <Tab label="All" />
                     <Tab label="Pending" />
@@ -209,111 +226,196 @@ const TasksList = () => {
                 </Tabs>
             </Box>
 
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Title</TableCell>
-                            <TableCell>Project</TableCell>
-                            {isAdmin && <TableCell>Assigned To</TableCell>}
-                            <TableCell>Status</TableCell>
-                            <TableCell>Priority</TableCell>
-                            <TableCell>Due Date</TableCell>
-                            <TableCell>Actions</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {filteredTasks.length > 0 ? (
-                            filteredTasks.map((task) => (
-                                <TableRow key={task._id}>
-                                    <TableCell>{task.title}</TableCell>
-                                    <TableCell>
-                                        {task.project?.name ? (
-                                            <Typography variant="body2" color="textPrimary">
-                                                {task.project.name}
+            {isMobile ? (
+                <Stack spacing={2}>
+                    {filteredTasks.length > 0 ? (
+                        filteredTasks.map((task) => (
+                            <Card key={task._id} elevation={2}>
+                                <CardContent>
+                                    <Typography variant="h6" gutterBottom>
+                                        {task.title}
+                                    </Typography>
+                                    <Stack spacing={1}>
+                                        <Box>
+                                            <Typography variant="subtitle2" color="textSecondary">
+                                                Project
                                             </Typography>
-                                        ) : (
-                                            <Typography variant="body2" color="textSecondary">
-                                                No Project
+                                            <Typography variant="body2">
+                                                {task.project?.name || 'No Project'}
                                             </Typography>
+                                        </Box>
+                                        {isAdmin && (
+                                            <Box>
+                                                <Typography variant="subtitle2" color="textSecondary">
+                                                    Assigned To
+                                                </Typography>
+                                                <Typography variant="body2">
+                                                    {task.assignedTo?.name || 'Unassigned'}
+                                                </Typography>
+                                            </Box>
                                         )}
-                                    </TableCell>
-                                    {isAdmin && (
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <Typography variant="subtitle2" color="textSecondary">
+                                                Status:
+                                            </Typography>
+                                            <Chip
+                                                label={task.status}
+                                                color={getStatusColor(task.status)}
+                                                size="small"
+                                            />
+                                        </Box>
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <Typography variant="subtitle2" color="textSecondary">
+                                                Priority:
+                                            </Typography>
+                                            <Chip
+                                                label={task.priority}
+                                                color={getPriorityColor(task.priority)}
+                                                size="small"
+                                            />
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="subtitle2" color="textSecondary">
+                                                Due Date
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                {format(new Date(task.dueDate), 'MMM dd, yyyy')}
+                                            </Typography>
+                                        </Box>
+                                    </Stack>
+                                </CardContent>
+                                <CardActions>
+                                    <Button
+                                        size="small"
+                                        component={Link}
+                                        to={`/tasks/${task._id}`}
+                                        startIcon={<ViewIcon />}
+                                    >
+                                        View
+                                    </Button>
+                                    <Button
+                                        size="small"
+                                        component={Link}
+                                        to={`/tasks/${task._id}/edit`}
+                                        startIcon={<EditIcon />}
+                                    >
+                                        Edit
+                                    </Button>
+                                    <Button
+                                        size="small"
+                                        color="error"
+                                        onClick={() => handleDelete(task)}
+                                        startIcon={<DeleteIcon />}
+                                    >
+                                        Delete
+                                    </Button>
+                                </CardActions>
+                            </Card>
+                        ))
+                    ) : (
+                        <Typography variant="body1" color="textSecondary" textAlign="center">
+                            No tasks found
+                        </Typography>
+                    )}
+                </Stack>
+            ) : (
+                <TableContainer component={Paper}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Title</TableCell>
+                                <TableCell>Project</TableCell>
+                                {isAdmin && <TableCell>Assigned To</TableCell>}
+                                <TableCell>Status</TableCell>
+                                <TableCell>Priority</TableCell>
+                                <TableCell>Due Date</TableCell>
+                                <TableCell>Actions</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {filteredTasks.length > 0 ? (
+                                filteredTasks.map((task) => (
+                                    <TableRow key={task._id}>
+                                        <TableCell>{task.title}</TableCell>
                                         <TableCell>
-                                            {task.assignedTo?.name ? (
+                                            {task.project?.name ? (
                                                 <Typography variant="body2" color="textPrimary">
-                                                    {task.assignedTo.name}
+                                                    {task.project.name}
                                                 </Typography>
                                             ) : (
                                                 <Typography variant="body2" color="textSecondary">
-                                                    Unassigned
+                                                    No Project
                                                 </Typography>
                                             )}
                                         </TableCell>
-                                    )}
-                                    <TableCell>
-                                        <Chip
-                                            label={task.status.replace('_', ' ').toUpperCase()}
-                                            color={getStatusColor(task.status)}
-                                            size="small"
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Chip
-                                            label={task.priority.toUpperCase()}
-                                            color={getPriorityColor(task.priority)}
-                                            size="small"
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        {format(new Date(task.dueDate), 'MMM dd, yyyy')}
-                                    </TableCell>
-                                    <TableCell>
-                                        <IconButton
-                                            component={Link}
-                                            to={`/tasks/${task._id}`}
-                                            color="primary"
-                                            size="small"
-                                            title="View details"
-                                        >
-                                            <ViewIcon />
-                                        </IconButton>
                                         {isAdmin && (
-                                            <>
-                                                <IconButton
-                                                    component={Link}
-                                                    to={`/tasks/${task._id}/edit`}
-                                                    color="primary"
-                                                    size="small"
-                                                    title="Edit task"
-                                                >
-                                                    <EditIcon />
-                                                </IconButton>
-                                                <IconButton
-                                                    onClick={() => handleDelete(task)}
-                                                    color="error"
-                                                    size="small"
-                                                    title="Delete task"
-                                                >
-                                                    <DeleteIcon />
-                                                </IconButton>
-                                            </>
+                                            <TableCell>
+                                                {task.assignedTo?.name ? (
+                                                    <Typography variant="body2" color="textPrimary">
+                                                        {task.assignedTo.name}
+                                                    </Typography>
+                                                ) : (
+                                                    <Typography variant="body2" color="textSecondary">
+                                                        Unassigned
+                                                    </Typography>
+                                                )}
+                                            </TableCell>
                                         )}
+                                        <TableCell>
+                                            <Chip
+                                                label={task.status}
+                                                color={getStatusColor(task.status)}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={task.priority}
+                                                color={getPriorityColor(task.priority)}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            {format(new Date(task.dueDate), 'MMM dd, yyyy')}
+                                        </TableCell>
+                                        <TableCell>
+                                            <IconButton
+                                                component={Link}
+                                                to={`/tasks/${task._id}`}
+                                                size="small"
+                                            >
+                                                <ViewIcon />
+                                            </IconButton>
+                                            <IconButton
+                                                component={Link}
+                                                to={`/tasks/${task._id}/edit`}
+                                                size="small"
+                                            >
+                                                <EditIcon />
+                                            </IconButton>
+                                            <IconButton
+                                                onClick={() => handleDelete(task)}
+                                                size="small"
+                                                color="error"
+                                            >
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={isAdmin ? 7 : 6} align="center">
+                                        <Typography variant="body1" color="textSecondary">
+                                            No tasks found
+                                        </Typography>
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={isAdmin ? 7 : 6} align="center">
-                                    <Typography variant="body1" color="textSecondary">
-                                        No tasks found
-                                    </Typography>
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
 
             <Dialog
                 open={deleteDialogOpen}
@@ -322,7 +424,7 @@ const TasksList = () => {
                 <DialogTitle>Delete Task</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Are you sure you want to delete the task "{taskToDelete?.title}"? This action cannot be undone.
+                        Are you sure you want to delete this task? This action cannot be undone.
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>

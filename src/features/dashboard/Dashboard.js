@@ -94,9 +94,16 @@ const Dashboard = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+    <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: { xs: 2, sm: 3 },
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
           Dashboard
         </Typography>
         <Tooltip title="View Profile">
@@ -104,35 +111,36 @@ const Dashboard = () => {
             variant="outlined"
             startIcon={<PersonIcon />}
             onClick={handleOpenProfile}
+            size="small"
           >
             Profile
           </Button>
         </Tooltip>
       </Box>
 
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
+      <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: { xs: 2, sm: 4 } }}>
+        <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' } }}>
           Welcome, {user?.name}!
         </Typography>
-        <Grid container spacing={3}>
+        <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
           {/* Task Statistics */}
           <Grid item xs={12} md={6}>
             <Paper
               sx={{
-                p: 2,
+                p: { xs: 1, sm: 2 },
                 display: 'flex',
                 flexDirection: 'column',
-                height: 240,
+                height: { xs: 'auto', sm: 240 },
               }}
             >
               <Typography component="h2" variant="h6" color="primary" gutterBottom>
                 Task Overview
               </Typography>
-              <Grid container spacing={2}>
+              <Grid container spacing={{ xs: 1, sm: 2 }}>
                 <Grid item xs={6}>
                   <Paper
                     sx={{
-                      p: 2,
+                      p: { xs: 1, sm: 2 },
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -140,14 +148,14 @@ const Dashboard = () => {
                       color: 'white',
                     }}
                   >
-                    <Typography variant="h4">{taskStats.total}</Typography>
+                    <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>{taskStats.total}</Typography>
                     <Typography variant="body2">Total Tasks</Typography>
                   </Paper>
                 </Grid>
                 <Grid item xs={6}>
                   <Paper
                     sx={{
-                      p: 2,
+                      p: { xs: 1, sm: 2 },
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -155,14 +163,14 @@ const Dashboard = () => {
                       color: 'white',
                     }}
                   >
-                    <Typography variant="h4">{taskStats.completed}</Typography>
+                    <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>{taskStats.completed}</Typography>
                     <Typography variant="body2">Completed</Typography>
                   </Paper>
                 </Grid>
                 <Grid item xs={6}>
                   <Paper
                     sx={{
-                      p: 2,
+                      p: { xs: 1, sm: 2 },
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -170,14 +178,14 @@ const Dashboard = () => {
                       color: 'white',
                     }}
                   >
-                    <Typography variant="h4">{taskStats.inProgress}</Typography>
+                    <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>{taskStats.inProgress}</Typography>
                     <Typography variant="body2">In Progress</Typography>
                   </Paper>
                 </Grid>
                 <Grid item xs={6}>
                   <Paper
                     sx={{
-                      p: 2,
+                      p: { xs: 1, sm: 2 },
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -185,7 +193,7 @@ const Dashboard = () => {
                       color: 'white',
                     }}
                   >
-                    <Typography variant="h4">{taskStats.pending}</Typography>
+                    <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>{taskStats.pending}</Typography>
                     <Typography variant="body2">Pending</Typography>
                   </Paper>
                 </Grid>
@@ -197,20 +205,20 @@ const Dashboard = () => {
           <Grid item xs={12} md={6}>
             <Paper
               sx={{
-                p: 2,
+                p: { xs: 1, sm: 2 },
                 display: 'flex',
                 flexDirection: 'column',
-                height: 240,
+                height: { xs: 'auto', sm: 240 },
               }}
             >
               <Typography component="h2" variant="h6" color="primary" gutterBottom>
                 Project Overview
               </Typography>
-              <Grid container spacing={2}>
+              <Grid container spacing={{ xs: 1, sm: 2 }}>
                 <Grid item xs={6}>
                   <Paper
                     sx={{
-                      p: 2,
+                      p: { xs: 1, sm: 2 },
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -218,14 +226,14 @@ const Dashboard = () => {
                       color: 'white',
                     }}
                   >
-                    <Typography variant="h4">{projectStats.total}</Typography>
+                    <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>{projectStats.total}</Typography>
                     <Typography variant="body2">Total Projects</Typography>
                   </Paper>
                 </Grid>
                 <Grid item xs={6}>
                   <Paper
                     sx={{
-                      p: 2,
+                      p: { xs: 1, sm: 2 },
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -233,14 +241,14 @@ const Dashboard = () => {
                       color: 'white',
                     }}
                   >
-                    <Typography variant="h4">{projectStats.completed}</Typography>
+                    <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>{projectStats.completed}</Typography>
                     <Typography variant="body2">Completed</Typography>
                   </Paper>
                 </Grid>
                 <Grid item xs={6}>
                   <Paper
                     sx={{
-                      p: 2,
+                      p: { xs: 1, sm: 2 },
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -248,14 +256,14 @@ const Dashboard = () => {
                       color: 'white',
                     }}
                   >
-                    <Typography variant="h4">{projectStats.active}</Typography>
+                    <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>{projectStats.active}</Typography>
                     <Typography variant="body2">Active</Typography>
                   </Paper>
                 </Grid>
                 <Grid item xs={6}>
                   <Paper
                     sx={{
-                      p: 2,
+                      p: { xs: 1, sm: 2 },
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
@@ -263,7 +271,7 @@ const Dashboard = () => {
                       color: 'white',
                     }}
                   >
-                    <Typography variant="h4">{projectStats.pending}</Typography>
+                    <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>{projectStats.pending}</Typography>
                     <Typography variant="body2">Pending</Typography>
                   </Paper>
                 </Grid>

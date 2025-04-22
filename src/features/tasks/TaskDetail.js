@@ -31,7 +31,8 @@ import {
     Snackbar,
     Card,
     CardContent,
-    LinearProgress
+    LinearProgress,
+    IconButton
 } from '@mui/material';
 import {
     Edit as EditIcon,
@@ -48,11 +49,14 @@ import {
     Star as StarIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
+import { useTheme, useMediaQuery } from '@mui/material';
 
 const TaskDetail = () => {
     const { id } = useParams();
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { currentTask, status, error, userRewards } = useSelector(state => state.tasks);
     const { user } = useSelector(state => state.auth);
     const [commentText, setCommentText] = useState('');
@@ -291,230 +295,208 @@ const TaskDetail = () => {
     }
 
     return (
-        <Box sx={{ mt: 2 }}>
-            <Paper sx={{ p: 3, mb: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                    <Typography variant="h4" component="h1" gutterBottom>
-                        {currentTask.title}
-                    </Typography>
-                    <Box>
-                        <Button
-                            component={Link}
-                            to="/tasks"
-                            variant="outlined"
-                            sx={{ mr: 1 }}
-                        >
-                            Back
-                        </Button>
-                        {canUpdateStatus && (
+        <Box sx={{ mt: 2, p: { xs: 1, sm: 2 } }}>
+            {status === 'loading' ? (
+                <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+                    <CircularProgress />
+                </Box>
+            ) : error ? (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                </Alert>
+            ) : currentTask ? (
+                <Box>
+                    <Box sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        mb: 3,
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: { xs: 2, sm: 0 }
+                    }}>
+                        <Box>
+                            <Typography variant="h4" component="h1" gutterBottom>
+                                {currentTask.title}
+                            </Typography>
+                            <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
+                                <Chip
+                                    label={currentTask.status}
+                                    color={getStatusColor(currentTask.status)}
+                                    size={isMobile ? "small" : "medium"}
+                                />
+                                <Chip
+                                    label={currentTask.priority}
+                                    color={getPriorityColor(currentTask.priority)}
+                                    size={isMobile ? "small" : "medium"}
+                                />
+                            </Box>
+                        </Box>
+                        <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
                             <Button
                                 variant="contained"
-                                startIcon={<UpdateIcon />}
                                 color="primary"
-                                onClick={handleStatusUpdate}
-                                sx={{ mr: 1 }}
+                                component={Link}
+                                to={`/tasks/${id}/edit`}
+                                fullWidth={isMobile}
                             >
-                                Update Status
+                                Edit Task
                             </Button>
-                        )}
-                        {isAdmin && (
-                            <>
-                                <Button
-                                    component={Link}
-                                    to={`/tasks/${id}/edit`}
-                                    variant="contained"
-                                    startIcon={<EditIcon />}
-                                    color="primary"
-                                    sx={{ mr: 1 }}
-                                >
-                                    Edit
-                                </Button>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<DeleteIcon />}
-                                    color="error"
-                                    onClick={handleDelete}
-                                >
-                                    Delete
-                                </Button>
-                            </>
-                        )}
-                    </Box>
-                </Box>
-
-                <Grid container spacing={3}>
-                    <Grid item xs={12} md={8}>
-                        <Typography variant="h6" gutterBottom>
-                            Description
-                        </Typography>
-                        <Typography paragraph>
-                            {currentTask.description}
-                        </Typography>
-
-                        {/* Comments Section */}
-                        <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-                            Comments
-                        </Typography>
-                        <List>
-                            {currentTask.comments?.map((comment, index) => (
-                                <ListItem key={index} alignItems="flex-start">
-                                    <ListItemAvatar>
-                                        <Avatar>
-                                            <PersonIcon />
-                                        </Avatar>
-                                    </ListItemAvatar>
-                                    <ListItemText
-                                        primary={comment.postedBy?.name || 'Unknown User'}
-                                        secondary={
-                                            <>
-                                                <Typography
-                                                    component="span"
-                                                    variant="body2"
-                                                    color="text.primary"
-                                                >
-                                                    {format(new Date(comment.createdAt), 'PPp')}
-                                                </Typography>
-                                                <br />
-                                                {comment.text}
-                                            </>
-                                        }
-                                    />
-                                </ListItem>
-                            ))}
-                        </List>
-
-                        <Box component="form" onSubmit={handleCommentSubmit} sx={{ mt: 2 }}>
-                            <TextField
-                                fullWidth
-                                multiline
-                                rows={2}
+                            <Button
                                 variant="outlined"
-                                placeholder="Add a comment..."
-                                value={commentText}
-                                onChange={(e) => setCommentText(e.target.value)}
-                                InputProps={{
-                                    endAdornment: (
-                                        <Button
-                                            type="submit"
-                                            variant="contained"
-                                            color="primary"
-                                            disabled={!commentText.trim()}
-                                        >
-                                            <SendIcon />
-                                        </Button>
-                                    ),
-                                }}
-                            />
+                                color="error"
+                                onClick={handleDelete}
+                                fullWidth={isMobile}
+                            >
+                                Delete Task
+                            </Button>
                         </Box>
-                    </Grid>
+                    </Box>
 
-                    <Grid item xs={12} md={4}>
-                        <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-                            <Typography variant="h6" gutterBottom>
-                                Task Details
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                                <ProjectIcon sx={{ mr: 1, color: 'primary.main' }} />
-                                <Typography variant="body1">
-                                    <strong>Project:</strong> {currentTask.project ? currentTask.project.name : 'No Project Assigned'}
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} md={8}>
+                            <Paper sx={{ p: { xs: 2, sm: 3 }, mb: 3 }}>
+                                <Typography variant="h6" gutterBottom>
+                                    Description
                                 </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                                <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-                                <Typography variant="body1">
-                                    <strong>Assigned To:</strong> {currentTask.assignedTo ? currentTask.assignedTo.name : 'Not Assigned'}
+                                <Typography variant="body1" paragraph>
+                                    {currentTask.description}
                                 </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                                <AccessTimeIcon sx={{ mr: 1, color: 'primary.main' }} />
-                                <Typography variant="body1">
-                                    <strong>Due Date:</strong> {format(new Date(currentTask.dueDate), 'PP')}
-                                </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                                <Chip
-                                    label={currentTask.status.replace('_', ' ').toUpperCase()}
-                                    color={getStatusColor(currentTask.status)}
-                                    size="small"
-                                />
-                                <Chip
-                                    label={currentTask.priority.toUpperCase()}
-                                    color={getPriorityColor(currentTask.priority)}
-                                    size="small"
-                                    sx={{ ml: 1 }}
-                                />
-                            </Box>
-                        </Paper>
+                            </Paper>
 
-                        {/* Rewards Section */}
-                        {isAssignedToTask && userRewards && (
-                            <Card sx={{ mb: 2 }}>
-                                <CardContent>
+                            <Paper sx={{ p: { xs: 2, sm: 3 }, mb: 3 }}>
+                                <Typography variant="h6" gutterBottom>
+                                    Comments
+                                </Typography>
+                                <List>
+                                    {currentTask.comments?.map((comment) => (
+                                        <ListItem key={comment._id} alignItems="flex-start">
+                                            <ListItemAvatar>
+                                                <Avatar>
+                                                    <PersonIcon />
+                                                </Avatar>
+                                            </ListItemAvatar>
+                                            <ListItemText
+                                                primary={
+                                                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                        <Typography variant="subtitle2">
+                                                            {comment.user?.name}
+                                                        </Typography>
+                                                        <Typography variant="caption" color="textSecondary">
+                                                            {format(new Date(comment.createdAt), 'MMM dd, yyyy HH:mm')}
+                                                        </Typography>
+                                                    </Box>
+                                                }
+                                                secondary={comment.text}
+                                            />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                                <Box component="form" onSubmit={handleCommentSubmit} sx={{ mt: 2 }}>
+                                    <TextField
+                                        fullWidth
+                                        variant="outlined"
+                                        placeholder="Add a comment..."
+                                        value={commentText}
+                                        onChange={(e) => setCommentText(e.target.value)}
+                                        size={isMobile ? "small" : "medium"}
+                                        InputProps={{
+                                            endAdornment: (
+                                                <IconButton
+                                                    type="submit"
+                                                    color="primary"
+                                                    disabled={!commentText.trim()}
+                                                >
+                                                    <SendIcon />
+                                                </IconButton>
+                                            ),
+                                        }}
+                                    />
+                                </Box>
+                            </Paper>
+                        </Grid>
+
+                        <Grid item xs={12} md={4}>
+                            <Paper sx={{ p: { xs: 2, sm: 3 }, mb: 3 }}>
+                                <Typography variant="h6" gutterBottom>
+                                    Task Details
+                                </Typography>
+                                <Grid container spacing={2}>
+                                    <Grid item xs={12}>
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <ProjectIcon color="action" />
+                                            <Typography variant="subtitle2" color="textSecondary">
+                                                Project
+                                            </Typography>
+                                        </Box>
+                                        <Typography variant="body1">
+                                            {currentTask.project?.name || 'No Project'}
+                                        </Typography>
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <PersonIcon color="action" />
+                                            <Typography variant="subtitle2" color="textSecondary">
+                                                Assigned To
+                                            </Typography>
+                                        </Box>
+                                        <Typography variant="body1">
+                                            {currentTask.assignedTo?.name || 'Unassigned'}
+                                        </Typography>
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <AccessTimeIcon color="action" />
+                                            <Typography variant="subtitle2" color="textSecondary">
+                                                Due Date
+                                            </Typography>
+                                        </Box>
+                                        <Typography variant="body1">
+                                            {format(new Date(currentTask.dueDate), 'MMM dd, yyyy')}
+                                        </Typography>
+                                    </Grid>
+                                </Grid>
+                            </Paper>
+
+                            {rewardInfo && (
+                                <Paper sx={{ p: { xs: 2, sm: 3 } }}>
                                     <Typography variant="h6" gutterBottom>
-                                        Your Rewards
+                                        Rewards
                                     </Typography>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                        <EmojiEventsIcon sx={{ mr: 1, color: 'gold' }} />
+                                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                        <EmojiEventsIcon color="primary" />
                                         <Typography variant="body1">
-                                            <strong>Total Points:</strong> {userRewards.rewardPoints}
+                                            Points Earned: {rewardInfo.pointsEarned}
                                         </Typography>
                                     </Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                        <TrendingUpIcon sx={{ mr: 1, color: 'primary.main' }} />
-                                        <Typography variant="body1">
-                                            <strong>Current Streak:</strong> {userRewards.currentStreak} days
-                                        </Typography>
-                                    </Box>
-                                    {currentTask.status === 'completed' && currentTask.rewardPoints > 0 && (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                            <StarIcon sx={{ mr: 1, color: 'success.main' }} />
+                                    {rewardInfo.currentStreak > 0 && (
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <TrendingUpIcon color="success" />
                                             <Typography variant="body1">
-                                                <strong>Points Earned:</strong> {currentTask.rewardPoints}
-                                                {currentTask.isCompletedOnTime && ' (Completed on time!)'}
+                                                Current Streak: {rewardInfo.currentStreak}
                                             </Typography>
                                         </Box>
                                     )}
-                                    {userRewards.rewards && userRewards.rewards.length > 0 && (
-                                        <Box sx={{ mt: 2 }}>
-                                            <Typography variant="subtitle2" gutterBottom>
-                                                Recent Rewards:
-                                            </Typography>
-                                            <List dense>
-                                                {userRewards.rewards.slice(0, 3).map((reward, index) => (
-                                                    <ListItem key={index}>
-                                                        <ListItemText
-                                                            primary={`${reward.type === 'points' ? '+' : ''}${reward.value} ${reward.type}`}
-                                                            secondary={reward.description}
-                                                        />
-                                                    </ListItem>
-                                                ))}
-                                            </List>
-                                        </Box>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        )}
+                                </Paper>
+                            )}
+                        </Grid>
                     </Grid>
-                </Grid>
-            </Paper>
+                </Box>
+            ) : null}
 
             {/* Status Update Dialog */}
             <Dialog
                 open={statusDialogOpen}
                 onClose={() => setStatusDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
             >
                 <DialogTitle>Update Task Status</DialogTitle>
                 <DialogContent>
-                    <DialogContentText>
-                        Select the new status for this task.
-                    </DialogContentText>
-                    <FormControl fullWidth sx={{ mt: 2 }}>
-                        <InputLabel id="status-select-label">Status</InputLabel>
+                    <FormControl fullWidth margin="normal">
+                        <InputLabel>Status</InputLabel>
                         <Select
-                            labelId="status-select-label"
                             value={selectedStatus}
+                            onChange={(e) => handleStatusChange(e.target.value)}
                             label="Status"
-                            onChange={(e) => setSelectedStatus(e.target.value)}
                         >
                             <MenuItem value="pending">Pending</MenuItem>
                             <MenuItem value="in_progress">In Progress</MenuItem>
@@ -525,67 +507,17 @@ const TaskDetail = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setStatusDialogOpen(false)}>Cancel</Button>
-                    <Button 
-                        onClick={() => handleStatusChange(selectedStatus)} 
-                        color="primary"
-                        variant="contained"
-                    >
+                    <Button onClick={() => confirmStatusUpdate(selectedStatus)} variant="contained">
                         Update
                     </Button>
                 </DialogActions>
             </Dialog>
 
-            {/* Completion Confirmation Dialog */}
-            <Dialog
-                open={statusUpdateDialog.open}
-                onClose={() => setStatusUpdateDialog({ ...statusUpdateDialog, open: false })}
-            >
-                <DialogTitle>Update Task Status</DialogTitle>
-                <DialogContent>
-                    <Box sx={{ mb: 2 }}>
-                        <Typography>
-                            Are you sure you want to mark this task as completed?
-                        </Typography>
-                        {statusUpdateDialog.potentialReward && (
-                            <Box sx={{ mt: 2 }}>
-                                <Typography variant="subtitle1" color="primary" gutterBottom>
-                                    Potential Rewards:
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                    <EmojiEventsIcon color={statusUpdateDialog.potentialReward.isOnTime ? 'primary' : 'action'} />
-                                    <Typography>
-                                        {statusUpdateDialog.potentialReward.basePoints} points
-                                        {!statusUpdateDialog.potentialReward.isOnTime && ' (reduced for late completion)'}
-                                    </Typography>
-                                </Box>
-                                {statusUpdateDialog.potentialReward.possibleStreak > 1 && (
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <StarIcon color="secondary" />
-                                        <Typography>
-                                            {statusUpdateDialog.potentialReward.possibleStreak} day streak possible!
-                                        </Typography>
-                                    </Box>
-                                )}
-                            </Box>
-                        )}
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setStatusUpdateDialog({ ...statusUpdateDialog, open: false })}>
-                        Cancel
-                    </Button>
-                    <Button 
-                        onClick={() => confirmStatusUpdate(statusUpdateDialog.newStatus)}
-                        color="primary"
-                        variant="contained"
-                    >
-                        Confirm
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
             {/* Delete Confirmation Dialog */}
-            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+            >
                 <DialogTitle>Delete Task</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
@@ -594,20 +526,49 @@ const TaskDetail = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={confirmDelete} color="error">
+                    <Button onClick={confirmDelete} color="error" variant="contained">
                         Delete
                     </Button>
                 </DialogActions>
             </Dialog>
 
+            {/* Status Update Reward Dialog */}
+            <Dialog
+                open={statusUpdateDialog.open}
+                onClose={() => setStatusUpdateDialog({ ...statusUpdateDialog, open: false })}
+            >
+                <DialogTitle>Complete Task</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {statusUpdateDialog.potentialReward.isOnTime ? (
+                            `Completing this task on time will earn you ${statusUpdateDialog.potentialReward.basePoints} points!`
+                        ) : (
+                            'This task is overdue. You will earn reduced points.'
+                        )}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setStatusUpdateDialog({ ...statusUpdateDialog, open: false })}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={() => confirmStatusUpdate(statusUpdateDialog.newStatus)}
+                        variant="contained"
+                        color="primary"
+                    >
+                        Complete Task
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar for notifications */}
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={6000}
                 onClose={handleCloseSnackbar}
-                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
-                <Alert 
-                    onClose={handleCloseSnackbar} 
+                <Alert
+                    onClose={handleCloseSnackbar}
                     severity={snackbar.severity}
                     sx={{ width: '100%' }}
                 >

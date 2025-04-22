@@ -44,23 +44,31 @@ import { fetchUsers } from '../users/userSlice';
 import { fetchTasks } from '../tasks/tasksSlice';
 
 const StatCard = ({ title, value, icon, color, trend }) => (
-  <Card sx={{ height: '100%', background: `linear-gradient(45deg, ${color} 30%, ${color}90 90%)` }}>
+  <Card sx={{ 
+    height: '100%', 
+    background: `linear-gradient(45deg, ${color} 30%, ${color}90 90%)`,
+    p: { xs: 1, sm: 2 }
+  }}>
     <CardContent sx={{ color: 'white' }}>
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Box>
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
             {title}
           </Typography>
-          <Typography variant="h4">{value || 0}</Typography>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>{value || 0}</Typography>
         </Box>
-        <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
+        <Avatar sx={{ 
+          bgcolor: 'rgba(255,255,255,0.2)',
+          width: { xs: 32, sm: 40 },
+          height: { xs: 32, sm: 40 }
+        }}>
           {icon}
         </Avatar>
       </Box>
       {trend && (
         <Box display="flex" alignItems="center" mt={2}>
-          <TrendingUpIcon sx={{ mr: 1 }} />
-          <Typography variant="body2">{trend}</Typography>
+          <TrendingUpIcon sx={{ mr: 1, fontSize: { xs: '1rem', sm: '1.25rem' } }} />
+          <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{trend}</Typography>
         </Box>
       )}
     </CardContent>
@@ -207,13 +215,20 @@ const AdminDashboard = () => {
   const adminCount = users?.filter(user => user?.role === 'admin').length || 0;
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+    <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: { xs: 2, sm: 4 } }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: { xs: 2, sm: 4 },
+        gap: { xs: 2, sm: 0 }
+      }}>
         <Box>
-          <Typography variant="h4" gutterBottom>
+          <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
             Welcome back, {user?.name || 'Admin User'}!
           </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
+          <Typography variant="subtitle1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
             Here's what's happening with your projects today
           </Typography>
         </Box>
@@ -223,12 +238,13 @@ const AdminDashboard = () => {
           component={Link}
           to="/tasks/create"
           startIcon={<TaskIcon />}
+          size="small"
         >
           Create New Task
         </Button>
       </Box>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Total Tasks"

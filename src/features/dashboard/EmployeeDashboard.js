@@ -214,27 +214,34 @@ const EmployeeDashboard = () => {
   const upcomingTasks = getUpcomingTasks();
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: { xs: 2, sm: 4 } }}>
       {/* Header Section */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: { xs: 2, sm: 3 },
+        gap: { xs: 2, sm: 0 }
+      }}>
         <Box>
-          <Typography variant="h4" gutterBottom>
+          <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
             Welcome, {user?.name}!
           </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
+          <Typography variant="subtitle1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
             Your Task Dashboard
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Tooltip title={`${overdueTasks.length} overdue tasks`}>
-            <IconButton color="primary" sx={{ mr: 2 }} component={Link} to="/tasks">
+            <IconButton color="primary" sx={{ mr: 2 }} component={Link} to="/tasks" size="small">
               <Badge badgeContent={overdueTasks.length} color="error">
                 <NotificationIcon />
               </Badge>
             </IconButton>
           </Tooltip>
           <Tooltip title="Profile">
-            <IconButton color="primary" component={Link} to="/profile">
+            <IconButton color="primary" component={Link} to="/profile" size="small">
               <PersonIcon />
             </IconButton>
           </Tooltip>
@@ -243,22 +250,52 @@ const EmployeeDashboard = () => {
 
       {/* Error Alert */}
       {tasksError && (
-        <Paper sx={{ p: 2, mb: 3, bgcolor: 'error.light' }}>
-          <Typography variant="subtitle1" color="error.contrastText">
+        <Paper sx={{ p: { xs: 1, sm: 2 }, mb: { xs: 2, sm: 3 }, bgcolor: 'error.light' }}>
+          <Typography variant="subtitle1" color="error.contrastText" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
             Error loading your tasks: {tasksError}
           </Typography>
           <Button 
             variant="contained" 
-            sx={{ mt: 1, bgcolor: 'error.dark' }}
+            color="error" 
             onClick={() => dispatch(fetchUserTasks())}
+            size="small"
           >
             Retry
           </Button>
         </Paper>
       )}
 
-      {/* Task Statistics */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      {/* Task Progress */}
+      <Grid container spacing={{ xs: 1, sm: 2, md: 3 }}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                Task Progress
+              </Typography>
+              <Box display="flex" alignItems="center" mb={2}>
+                <Typography variant="h4" sx={{ mr: 2, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                  {Math.round(completionPercentage)}%
+                </Typography>
+                <Box flexGrow={1}>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={completionPercentage} 
+                    sx={{ height: { xs: 8, sm: 10 }, borderRadius: 5 }}
+                  />
+                </Box>
+              </Box>
+              <Box display="flex" justifyContent="space-between">
+                <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Completed: {taskStats.completed}
+                </Typography>
+                <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Total: {taskStats.total}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Paper sx={{ p: 2, textAlign: 'center', height: '100%' }}>
             <Typography variant="h6" color="primary">Total Tasks</Typography>
@@ -284,21 +321,6 @@ const EmployeeDashboard = () => {
           </Paper>
         </Grid>
       </Grid>
-
-      {/* Progress Overview */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">Your Progress</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {completionPercentage}% Complete
-          </Typography>
-        </Box>
-        <LinearProgress 
-          variant="determinate" 
-          value={completionPercentage} 
-          sx={{ height: 10, borderRadius: 5 }}
-        />
-      </Paper>
 
       {/* Task List */}
       <Paper sx={{ p: 2 }}>
