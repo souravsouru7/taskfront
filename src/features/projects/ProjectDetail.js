@@ -72,6 +72,7 @@ const ProjectDetail = () => {
     description: '',
     dueDate: new Date(new Date().setDate(new Date().getDate() + 7)),
   });
+  const [openTeamDialog, setOpenTeamDialog] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -256,6 +257,29 @@ const ProjectDetail = () => {
   const handleMilestoneStatusChange = async (milestoneId, completed) => {
     await dispatch(updateMilestoneStatus({ projectId: id, milestoneId, completed }));
     dispatch(fetchProjectById(id));
+  };
+
+  const handleOpenTeamDialog = () => {
+    setOpenTeamDialog(true);
+  };
+
+  const handleCloseTeamDialog = () => {
+    setOpenTeamDialog(false);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'completed':
+        return 'success';
+      case 'in-progress':
+        return 'info';
+      case 'pending':
+        return 'warning';
+      case 'overdue':
+        return 'error';
+      default:
+        return 'default';
+    }
   };
 
   if (projectLoading) {
