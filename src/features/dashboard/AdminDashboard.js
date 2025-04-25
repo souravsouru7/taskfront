@@ -27,6 +27,12 @@ import {
   LinearProgress,
   IconButton,
   Tooltip,
+  ListItemAvatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  ListItemSecondary,
 } from '@mui/material';
 import {
   People as PeopleIcon,
@@ -37,18 +43,31 @@ import {
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
+  Person as PersonIcon,
+  Email as EmailIcon,
+  AdminPanelSettings as AdminIcon,
+  PersonOutline as UserIcon,
 } from '@mui/icons-material';
 
 import { fetchProjects } from '../projects/projectSlice';
 import { fetchUsers } from '../users/userSlice';
 import { fetchTasks } from '../tasks/tasksSlice';
 
-const StatCard = ({ title, value, icon, color, trend }) => (
-  <Card sx={{ 
-    height: '100%', 
-    background: `linear-gradient(45deg, ${color} 30%, ${color}90 90%)`,
-    p: { xs: 1, sm: 2 }
-  }}>
+const StatCard = ({ title, value, icon, color, trend, onClick }) => (
+  <Card 
+    sx={{ 
+      height: '100%', 
+      background: `linear-gradient(45deg, ${color} 30%, ${color}90 90%)`,
+      p: { xs: 1, sm: 2 },
+      cursor: onClick ? 'pointer' : 'default',
+      '&:hover': onClick ? {
+        opacity: 0.9,
+        transform: 'scale(1.02)',
+        transition: 'all 0.2s ease-in-out'
+      } : {}
+    }}
+    onClick={onClick}
+  >
     <CardContent sx={{ color: 'white' }}>
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Box>
@@ -111,6 +130,171 @@ const TaskProgress = ({ tasks }) => {
   );
 };
 
+const CompletedTasksList = ({ tasks, open, onClose }) => {
+  const completedTasks = tasks?.filter(task => task.status === 'completed') || [];
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      scroll="paper"
+    >
+      <DialogTitle>
+        <Box display="flex" alignItems="center" gap={1}>
+          <CheckCircleIcon color="success" />
+          <Typography variant="h6">Completed Tasks</Typography>
+        </Box>
+      </DialogTitle>
+      <DialogContent dividers>
+        <List>
+          {completedTasks.length > 0 ? (
+            completedTasks.map((task) => (
+              <React.Fragment key={task._id}>
+                <ListItem alignItems="flex-start">
+                  <ListItemAvatar>
+                    <Avatar>
+                      <PersonIcon />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={task.title}
+                    secondary={
+                      <React.Fragment>
+                        <Typography
+                          component="span"
+                          variant="body2"
+                          color="text.primary"
+                        >
+                          Completed by: {task.assignedTo?.name}
+                        </Typography>
+                        {' — '}
+                        {task.project?.name && `Project: ${task.project.name}`}
+                        <br />
+                        Completed on: {new Date(task.updatedAt).toLocaleDateString()}
+                      </React.Fragment>
+                    }
+                  />
+                  <Chip
+                    label="Completed"
+                    color="success"
+                    size="small"
+                    icon={<CheckCircleIcon />}
+                  />
+                </ListItem>
+                <Divider variant="inset" component="li" />
+              </React.Fragment>
+            ))
+          ) : (
+            <ListItem>
+              <ListItemText
+                primary="No completed tasks"
+                secondary="Tasks that are marked as completed will appear here"
+              />
+            </ListItem>
+          )}
+        </List>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="primary">
+          Close
+        </Button>
+        <Button
+          component={Link}
+          to="/tasks"
+          color="primary"
+          variant="contained"
+        >
+          View All Tasks
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+const TeamMembersList = ({ users, open, onClose }) => {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      scroll="paper"
+    >
+      <DialogTitle>
+        <Box display="flex" alignItems="center" gap={1}>
+          <PeopleIcon color="primary" />
+          <Typography variant="h6">Team Members</Typography>
+        </Box>
+      </DialogTitle>
+      <DialogContent dividers>
+        <List>
+          {users && users.length > 0 ? (
+            users.map((user) => (
+              <React.Fragment key={user._id}>
+                <ListItem alignItems="flex-start">
+                  <ListItemAvatar>
+                    <Avatar>
+                      {user.role === 'admin' ? <AdminIcon /> : <UserIcon />}
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Typography variant="subtitle1">
+                          {user.name}
+                        </Typography>
+                        <Chip
+                          label={user.role}
+                          color={user.role === 'admin' ? 'primary' : 'default'}
+                          size="small"
+                        />
+                      </Box>
+                    }
+                    secondary={
+                      <React.Fragment>
+                        <Box display="flex" alignItems="center" gap={0.5}>
+                          <EmailIcon fontSize="small" color="action" />
+                          <Typography variant="body2" color="text.secondary">
+                            {user.email}
+                          </Typography>
+                        </Box>
+                      </React.Fragment>
+                    }
+                  />
+                </ListItem>
+                <Divider variant="inset" component="li" />
+              </React.Fragment>
+            ))
+          ) : (
+            <ListItem>
+              <ListItemText
+                primary="No team members found"
+                secondary="Add team members to see them here"
+              />
+            </ListItem>
+          )}
+        </List>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="primary">
+          Close
+        </Button>
+        <Button
+          component={Link}
+          to="/users"
+          color="primary"
+          variant="contained"
+          startIcon={<PeopleIcon />}
+        >
+          Manage Users
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 const RecentActivity = ({ tasks }) => {
   if (!tasks || !Array.isArray(tasks)) {
     return null;
@@ -165,6 +349,8 @@ const AdminDashboard = () => {
   const { tasks, loading: tasksLoading } = useSelector((state) => state.tasks);
   const { projects, loading: projectsLoading } = useSelector((state) => state.projects);
   const { users, loading: usersLoading } = useSelector((state) => state.users);
+  const [completedTasksDialogOpen, setCompletedTasksDialogOpen] = React.useState(false);
+  const [teamMembersDialogOpen, setTeamMembersDialogOpen] = React.useState(false);
 
   useEffect(() => {
     dispatch(fetchTasks());
@@ -213,6 +399,22 @@ const AdminDashboard = () => {
   const taskStats = getTaskStats();
   const projectStats = getProjectStats();
   const adminCount = users?.filter(user => user?.role === 'admin').length || 0;
+
+  const handleOpenCompletedTasks = () => {
+    setCompletedTasksDialogOpen(true);
+  };
+
+  const handleCloseCompletedTasks = () => {
+    setCompletedTasksDialogOpen(false);
+  };
+
+  const handleOpenTeamMembers = () => {
+    setTeamMembersDialogOpen(true);
+  };
+
+  const handleCloseTeamMembers = () => {
+    setTeamMembersDialogOpen(false);
+  };
 
   return (
     <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: { xs: 2, sm: 4 } }}>
@@ -270,6 +472,7 @@ const AdminDashboard = () => {
             icon={<PeopleIcon />}
             color="#ff9800"
             trend={`${adminCount} admins`}
+            onClick={handleOpenTeamMembers}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -279,6 +482,7 @@ const AdminDashboard = () => {
             icon={<CheckCircleIcon />}
             color="#9c27b0"
             trend={`${getCompletionPercentage()}% of total`}
+            onClick={handleOpenCompletedTasks}
           />
         </Grid>
 
@@ -369,6 +573,20 @@ const AdminDashboard = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Completed Tasks Dialog */}
+      <CompletedTasksList
+        tasks={tasks}
+        open={completedTasksDialogOpen}
+        onClose={handleCloseCompletedTasks}
+      />
+
+      {/* Team Members Dialog */}
+      <TeamMembersList
+        users={users}
+        open={teamMembersDialogOpen}
+        onClose={handleCloseTeamMembers}
+      />
     </Container>
   );
 };

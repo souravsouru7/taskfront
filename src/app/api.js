@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance
 const API = axios.create({
-  baseURL: 'https://api.bakerycrm.shop/api',
+  baseURL: 'http://api.bakerycrm.shop/api',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -11,7 +11,7 @@ const API = axios.create({
   withCredentials: true
 });
 
-// Add request interceptor for authentication
+
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
