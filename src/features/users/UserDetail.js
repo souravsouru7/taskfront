@@ -170,24 +170,24 @@ const UserDetail = () => {
   // Filter tasks for the current user
   const userTasks = tasks.filter(task => task.assignedTo?._id === id);
 
-  // Calculate task statistics with proper categorization
-  const completedTasks = userTasks.filter(task => task.status === 'completed');
-  const inProgressTasks = userTasks.filter(task => task.status === 'in-progress');
-  const pendingTasks = userTasks.filter(task => {
-    const now = new Date();
-    const taskDueDate = new Date(task.dueDate);
-    now.setHours(0, 0, 0, 0);
-    taskDueDate.setHours(0, 0, 0, 0);
-    return task.status === 'pending' && taskDueDate >= now;
-  });
-
-  const overdueTasks = userTasks.filter(task => {
+  // First identify overdue tasks
+  const isOverdue = (task) => {
     const now = new Date();
     const taskDueDate = new Date(task.dueDate);
     now.setHours(0, 0, 0, 0);
     taskDueDate.setHours(0, 0, 0, 0);
     return taskDueDate < now && task.status !== 'completed';
-  });
+  };
+
+  // Calculate task statistics with proper categorization
+  const overdueTasks = userTasks.filter(isOverdue);
+  const completedTasks = userTasks.filter(task => task.status === 'completed');
+  const inProgressTasks = userTasks.filter(task => 
+    task.status === 'in-progress' && !isOverdue(task)
+  );
+  const pendingTasks = userTasks.filter(task => 
+    task.status === 'pending' && !isOverdue(task)
+  );
 
   // Calculate total as sum of all categories
   const totalTasks = completedTasks.length + inProgressTasks.length + pendingTasks.length + overdueTasks.length;
@@ -199,8 +199,7 @@ const UserDetail = () => {
     pending: pendingTasks.length,
     overdue: overdueTasks.length,
     calculatedTotal: totalTasks,
-    rawTotal: userTasks.length,
-    tasks: userTasks
+    rawTotal: userTasks.length
   });
 
   const TaskList = ({ tasks }) => (
