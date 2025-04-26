@@ -75,6 +75,19 @@ const TaskDetail = () => {
         potentialReward: null
     });
 
+    // Add loading state
+    const isLoading = status === 'loading' || !currentTask;
+
+    // Add null checks for task properties
+    const taskStatus = currentTask?.status || '';
+    const taskPriority = currentTask?.priority || '';
+    const taskDueDate = currentTask?.dueDate ? new Date(currentTask.dueDate) : null;
+    const taskIsOnTime = currentTask?.isOnTime || false;
+    const taskComments = currentTask?.comments || [];
+    const taskAttachments = currentTask?.attachments || [];
+    const taskAssignedTo = currentTask?.assignedTo || null;
+    const taskProject = currentTask?.project || null;
+
     const handleCloseSnackbar = () => {
         setSnackbar({ ...snackbar, open: false });
     };
@@ -160,8 +173,8 @@ const TaskDetail = () => {
     const handleStatusChange = (newStatus) => {
         if (newStatus === 'completed') {
             const now = new Date();
-            const dueDate = new Date(currentTask.dueDate);
-            const isOnTime = now <= dueDate;
+            const dueDate = currentTask?.dueDate ? new Date(currentTask.dueDate) : null;
+            const isOnTime = dueDate ? now <= dueDate : false;
             
             setStatusUpdateDialog({
                 open: true,
@@ -264,7 +277,7 @@ const TaskDetail = () => {
     // Only assigned users or admins can update status
     const canUpdateStatus = isAssignedToTask || isAdmin;
 
-    if (status === 'loading' && !currentTask) {
+    if (isLoading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                 <CircularProgress />
@@ -319,15 +332,22 @@ const TaskDetail = () => {
                             </Typography>
                             <Box display="flex" flexWrap="wrap" gap={1} mb={1}>
                                 <Chip
-                                    label={currentTask.status}
-                                    color={getStatusColor(currentTask.status)}
+                                    label={taskStatus}
+                                    color={getStatusColor(taskStatus)}
                                     size={isMobile ? "small" : "medium"}
                                 />
                                 <Chip
-                                    label={currentTask.priority}
-                                    color={getPriorityColor(currentTask.priority)}
+                                    label={taskPriority}
+                                    color={getPriorityColor(taskPriority)}
                                     size={isMobile ? "small" : "medium"}
                                 />
+                                {taskIsOnTime && (
+                                    <Chip
+                                        label="On Time"
+                                        color="success"
+                                        size={isMobile ? "small" : "medium"}
+                                    />
+                                )}
                             </Box>
                         </Box>
                         <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
@@ -367,7 +387,7 @@ const TaskDetail = () => {
                                     Comments
                                 </Typography>
                                 <List>
-                                    {currentTask.comments?.map((comment) => (
+                                    {taskComments.map((comment) => (
                                         <ListItem key={comment._id} alignItems="flex-start">
                                             <ListItemAvatar>
                                                 <Avatar>
@@ -428,7 +448,7 @@ const TaskDetail = () => {
                                             </Typography>
                                         </Box>
                                         <Typography variant="body1">
-                                            {currentTask.project?.name || 'No Project'}
+                                            {taskProject?.name || 'No Project'}
                                         </Typography>
                                     </Grid>
                                     <Grid item xs={12}>
@@ -439,7 +459,7 @@ const TaskDetail = () => {
                                             </Typography>
                                         </Box>
                                         <Typography variant="body1">
-                                            {currentTask.assignedTo?.name || 'Unassigned'}
+                                            {taskAssignedTo?.name || 'Unassigned'}
                                         </Typography>
                                     </Grid>
                                     <Grid item xs={12}>
@@ -450,7 +470,7 @@ const TaskDetail = () => {
                                             </Typography>
                                         </Box>
                                         <Typography variant="body1">
-                                            {format(new Date(currentTask.dueDate), 'MMM dd, yyyy')}
+                                            {taskDueDate ? format(taskDueDate, 'MMM dd, yyyy') : 'No due date'}
                                         </Typography>
                                     </Grid>
                                 </Grid>
@@ -540,8 +560,8 @@ const TaskDetail = () => {
                 <DialogTitle>Complete Task</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        {statusUpdateDialog.potentialReward.isOnTime ? (
-                            `Completing this task on time will earn you ${statusUpdateDialog.potentialReward.basePoints} points!`
+                        {statusUpdateDialog.potentialReward?.isOnTime ? (
+                            `Completing this task on time will earn you ${statusUpdateDialog.potentialReward?.basePoints || 0} points!`
                         ) : (
                             'This task is overdue. You will earn reduced points.'
                         )}
