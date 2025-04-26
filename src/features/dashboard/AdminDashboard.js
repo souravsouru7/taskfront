@@ -295,6 +295,157 @@ const TeamMembersList = ({ users, open, onClose }) => {
   );
 };
 
+const ProjectDetailsDialog = ({ projects, open, onClose }) => {
+  const dispatch = useDispatch();
+  const { tasks } = useSelector((state) => state.tasks);
+  const [selectedProject, setSelectedProject] = React.useState(null);
+  const activeProjects = projects?.filter(project => project?.status === 'in-progress') || [];
+  const totalProjects = projects?.length || 0;
+
+  // Helper to format date or show fallback
+  const formatDate = (date) => {
+    if (!date) return 'No due date';
+    const d = new Date(date);
+    return isNaN(d.getTime()) ? 'No due date' : d.toLocaleDateString();
+  };
+
+  // Get tasks for a specific project
+  const getTasksForProject = (project) => {
+    if (!project || !tasks) return [];
+    return tasks.filter(task => task.project?._id === project._id);
+  };
+
+  // Get task count for a project
+  const getTaskCount = (project) => {
+    return getTasksForProject(project).length;
+  };
+
+  const handleProjectSelect = (project) => {
+    setSelectedProject(project);
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle>
+        <Box display="flex" alignItems="center" gap={1}>
+          <ProjectIcon color="primary" />
+          <Typography variant="h6">Project Details</Typography>
+        </Box>
+      </DialogTitle>
+      <DialogContent dividers>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Active Projects
+                </Typography>
+                <Typography variant="h4" color="primary">
+                  {activeProjects.length}
+                </Typography>
+                <List>
+                  {activeProjects.map((project) => (
+                    <ListItem 
+                      key={project._id}
+                      button
+                      selected={selectedProject?._id === project._id}
+                      onClick={() => handleProjectSelect(project)}
+                    >
+                      <ListItemText
+                        primary={project.name}
+                        secondary={`Due: ${formatDate(project.dueDate)}`}
+                      />
+                      <Chip
+                        label={`${getTaskCount(project)} tasks`}
+                        size="small"
+                        color="primary"
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  {selectedProject ? `${selectedProject.name} Tasks` : 'Project Statistics'}
+                </Typography>
+                {selectedProject ? (
+                  <List>
+                    {getTaskCount(selectedProject) > 0 ? (
+                      getTasksForProject(selectedProject).map((task) => (
+                        <ListItem key={task._id}>
+                          <ListItemText
+                            primary={task.title}
+                            secondary={
+                              <React.Fragment>
+                                <Typography component="span" variant="body2" color="text.primary">
+                                  Status: {task.status}
+                                </Typography>
+                                <br />
+                                <Typography component="span" variant="body2" color="text.secondary">
+                                  Due: {formatDate(task.dueDate)}
+                                </Typography>
+                              </React.Fragment>
+                            }
+                          />
+                        </ListItem>
+                      ))
+                    ) : (
+                      <ListItem>
+                        <ListItemText primary="No tasks for this project" />
+                      </ListItem>
+                    )}
+                  </List>
+                ) : (
+                  <Box display="flex" flexDirection="column" gap={2}>
+                    <Box>
+                      <Typography variant="subtitle1">Total Projects</Typography>
+                      <Typography variant="h4">{totalProjects}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle1">Completion Rate</Typography>
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={totalProjects > 0 ? (activeProjects.length / totalProjects) * 100 : 0} 
+                        sx={{ height: 10, borderRadius: 5 }}
+                      />
+                      <Typography variant="body2" color="text.secondary" mt={1}>
+                        {totalProjects > 0 ? Math.round((activeProjects.length / totalProjects) * 100) : 0}% Active
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="primary">
+          Close
+        </Button>
+        <Button
+          component={Link}
+          to="/projects"
+          color="primary"
+          variant="contained"
+          startIcon={<ProjectIcon />}
+        >
+          View All Projects
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 const RecentActivity = ({ tasks }) => {
   if (!tasks || !Array.isArray(tasks)) {
     return null;
@@ -343,6 +494,118 @@ const RecentActivity = ({ tasks }) => {
   );
 };
 
+const TaskDetailsDialog = ({ tasks, open, onClose }) => {
+  const taskStats = {
+    total: tasks?.length || 0,
+    completed: tasks?.filter(task => task?.status === 'completed').length || 0,
+    inProgress: tasks?.filter(task => task?.status === 'in-progress').length || 0,
+    pending: tasks?.filter(task => task?.status === 'pending').length || 0,
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle>
+        <Box display="flex" alignItems="center" gap={1}>
+          <TaskIcon color="primary" />
+          <Typography variant="h6">Task Details</Typography>
+        </Box>
+      </DialogTitle>
+      <DialogContent dividers>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Task Statistics
+                </Typography>
+                <Box display="flex" flexDirection="column" gap={2}>
+                  <Box>
+                    <Typography variant="subtitle1">Total Tasks</Typography>
+                    <Typography variant="h4">{taskStats.total}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle1">Completed Tasks</Typography>
+                    <Typography variant="h4" color="success.main">{taskStats.completed}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle1">In Progress</Typography>
+                    <Typography variant="h4" color="warning.main">{taskStats.inProgress}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle1">Pending Tasks</Typography>
+                    <Typography variant="h4" color="error.main">{taskStats.pending}</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Task Distribution
+                </Typography>
+                <Box display="flex" flexDirection="column" gap={2}>
+                  <Box>
+                    <Typography variant="subtitle1">Completion Rate</Typography>
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={taskStats.total > 0 ? (taskStats.completed / taskStats.total) * 100 : 0} 
+                      sx={{ height: 10, borderRadius: 5 }}
+                    />
+                    <Typography variant="body2" color="text.secondary" mt={1}>
+                      {taskStats.total > 0 ? Math.round((taskStats.completed / taskStats.total) * 100) : 0}% Completed
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle1">Status Distribution</Typography>
+                    <Box display="flex" gap={1} mt={1}>
+                      <Chip
+                        label={`Completed: ${taskStats.completed}`}
+                        color="success"
+                        size="small"
+                      />
+                      <Chip
+                        label={`In Progress: ${taskStats.inProgress}`}
+                        color="warning"
+                        size="small"
+                      />
+                      <Chip
+                        label={`Pending: ${taskStats.pending}`}
+                        color="error"
+                        size="small"
+                      />
+                    </Box>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="primary">
+          Close
+        </Button>
+        <Button
+          component={Link}
+          to="/tasks"
+          color="primary"
+          variant="contained"
+          startIcon={<TaskIcon />}
+        >
+          View All Tasks
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 const AdminDashboard = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -351,6 +614,8 @@ const AdminDashboard = () => {
   const { users, loading: usersLoading } = useSelector((state) => state.users);
   const [completedTasksDialogOpen, setCompletedTasksDialogOpen] = React.useState(false);
   const [teamMembersDialogOpen, setTeamMembersDialogOpen] = React.useState(false);
+  const [projectDetailsDialogOpen, setProjectDetailsDialogOpen] = React.useState(false);
+  const [taskDetailsDialogOpen, setTaskDetailsDialogOpen] = React.useState(false);
 
   useEffect(() => {
     dispatch(fetchTasks());
@@ -384,7 +649,7 @@ const AdminDashboard = () => {
     }
     return {
       total: projects.length || 0,
-      active: projects.filter(project => project?.status === 'active').length || 0,
+      active: projects.filter(project => project?.status === 'in-progress').length || 0,
       completed: projects.filter(project => project?.status === 'completed').length || 0,
     };
   };
@@ -414,6 +679,22 @@ const AdminDashboard = () => {
 
   const handleCloseTeamMembers = () => {
     setTeamMembersDialogOpen(false);
+  };
+
+  const handleOpenProjectDetails = () => {
+    setProjectDetailsDialogOpen(true);
+  };
+
+  const handleCloseProjectDetails = () => {
+    setProjectDetailsDialogOpen(false);
+  };
+
+  const handleOpenTaskDetails = () => {
+    setTaskDetailsDialogOpen(true);
+  };
+
+  const handleCloseTaskDetails = () => {
+    setTaskDetailsDialogOpen(false);
   };
 
   return (
@@ -454,6 +735,7 @@ const AdminDashboard = () => {
             icon={<TaskIcon />}
             color="#3f51b5"
             trend={`${getCompletionPercentage()}% completed`}
+            onClick={handleOpenTaskDetails}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -463,6 +745,7 @@ const AdminDashboard = () => {
             icon={<ProjectIcon />}
             color="#4caf50"
             trend={`${projectStats.active ? Math.round((projectStats.active / projectStats.total) * 100) : 0}% completed`}
+            onClick={handleOpenProjectDetails}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -586,6 +869,20 @@ const AdminDashboard = () => {
         users={users}
         open={teamMembersDialogOpen}
         onClose={handleCloseTeamMembers}
+      />
+
+      {/* Project Details Dialog */}
+      <ProjectDetailsDialog
+        projects={projects}
+        open={projectDetailsDialogOpen}
+        onClose={handleCloseProjectDetails}
+      />
+
+      {/* Task Details Dialog */}
+      <TaskDetailsDialog
+        tasks={tasks}
+        open={taskDetailsDialogOpen}
+        onClose={handleCloseTaskDetails}
       />
     </Container>
   );

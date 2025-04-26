@@ -26,6 +26,12 @@ import {
   CircularProgress,
   Alert,
   Checkbox,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -319,43 +325,121 @@ const ProjectDetail = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       {projectLoading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
           <CircularProgress />
         </Box>
       ) : projectError ? (
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
           {projectError}
         </Alert>
       ) : project ? (
-        <Box>
-          <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} flexDirection={{ xs: 'column', sm: 'row' }} gap={2}>
-            <Box>
-              <Typography variant="h4" component="h1" gutterBottom>
-                {project.name}
-              </Typography>
-              <Typography variant="subtitle1" color="textSecondary">
-                Project ID: {project._id}
-              </Typography>
-            </Box>
-            <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
+        <>
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h4" gutterBottom>
+              {project.name}
+            </Typography>
+            <Typography variant="body1" color="text.secondary" paragraph>
+              {project.description}
+            </Typography>
+          </Box>
+
+          {/* Tasks Section */}
+          <Paper sx={{ p: 3, mb: 4 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+              <Typography variant="h6">Tasks</Typography>
               <Button
                 variant="contained"
-                color="primary"
-                onClick={handleOpenEditDialog}
-                fullWidth={isMobile}
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenTaskDialog()}
               >
-                Edit Project
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={handleOpenDeleteDialog}
-                fullWidth={isMobile}
-              >
-                Delete Project
+                Add Task
               </Button>
             </Box>
-          </Box>
+            
+            {project.tasks && project.tasks.length > 0 ? (
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Title</TableCell>
+                      <TableCell>Assigned To</TableCell>
+                      <TableCell>Priority</TableCell>
+                      <TableCell>Due Date</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {project.tasks.map((task) => (
+                      <TableRow key={task._id}>
+                        <TableCell>{task.title}</TableCell>
+                        <TableCell>
+                          {task.assignedTo ? (
+                            typeof task.assignedTo === 'object' ? (
+                              task.assignedTo.firstName && task.assignedTo.lastName 
+                                ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}`
+                                : task.assignedTo.name || task.assignedTo.email || 'Assigned'
+                            ) : (
+                              task.assignedTo
+                            )
+                          ) : 'Unassigned'}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={task.priority}
+                            color={
+                              task.priority === 'high'
+                                ? 'error'
+                                : task.priority === 'medium'
+                                ? 'warning'
+                                : 'success'
+                            }
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {new Date(task.dueDate).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={task.status}
+                            color={
+                              task.status === 'completed'
+                                ? 'success'
+                                : task.status === 'in-progress'
+                                ? 'primary'
+                                : 'default'
+                            }
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenTaskDialog(task)}
+                            color="primary"
+                          >
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteTask(task._id)}
+                            color="error"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography variant="body1" color="text.secondary" align="center">
+                No tasks found for this project.
+              </Typography>
+            )}
+          </Paper>
 
           <Grid container spacing={3}>
             <Grid item xs={12} md={8}>
@@ -406,14 +490,7 @@ const ProjectDetail = () => {
                   <Typography variant="h6">
                     Tasks
                   </Typography>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    size="small"
-                    onClick={() => handleOpenTaskDialog()}
-                  >
-                    Add Task
-                  </Button>
+                  <Chip label={`${project.tasks?.length || 0} tasks`} />
                 </Box>
                 <List>
                   {project.tasks?.map((task) => (
@@ -531,7 +608,7 @@ const ProjectDetail = () => {
               </Paper>
             </Grid>
           </Grid>
-        </Box>
+        </>
       ) : null}
 
       {/* Milestones Section */}
