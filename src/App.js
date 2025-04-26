@@ -217,7 +217,7 @@ function App() {
                 </Route>
 
                 {/* User Routes */}
-                <Route path="profile" element={<Profile />} />
+                <Route path="profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
                 
                 {/* Admin Routes */}
                 <Route path="users" element={<AdminRoute><UserList /></AdminRoute>} />

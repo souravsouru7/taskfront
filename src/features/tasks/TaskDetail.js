@@ -101,11 +101,15 @@ const TaskDetail = () => {
     }, []);
 
     useEffect(() => {
+        let isMounted = true;
         const loadTaskAndRewards = async () => {
             try {
                 const taskResult = await dispatch(fetchTaskById(id)).unwrap();
-                if (user) {
+                if (isMounted && user) {
                     await dispatch(fetchUserRewards()).unwrap();
+                }
+                if (isMounted && taskResult && taskResult.rewardInfo) {
+                    setRewardInfo(taskResult.rewardInfo);
                 }
             } catch (error) {
                 console.error('Error loading task or rewards:', error);
@@ -113,17 +117,24 @@ const TaskDetail = () => {
             }
         };
         
-        loadTaskAndRewards();
-        
-        // Set up an interval to refresh rewards data
-        const rewardRefreshInterval = setInterval(() => {
-            if (user) {
-                dispatch(fetchUserRewards());
-            }
-        }, 5000); // Refresh every 5 seconds
+        if (id) {
+            loadTaskAndRewards();
+        }
 
-        // Cleanup interval on component unmount
-        return () => clearInterval(rewardRefreshInterval);
+        // Only set up the interval if user is logged in
+        let rewardRefreshInterval;
+        if (user) {
+            rewardRefreshInterval = setInterval(() => {
+                dispatch(fetchUserRewards());
+            }, 30000); // Increased to 30 seconds to reduce API calls
+        }
+
+        return () => {
+            isMounted = false;
+            if (rewardRefreshInterval) {
+                clearInterval(rewardRefreshInterval);
+            }
+        };
     }, [dispatch, id, user, showSnackbar]);
 
     useEffect(() => {
@@ -131,21 +142,6 @@ const TaskDetail = () => {
             setSelectedStatus(currentTask.status);
         }
     }, [currentTask]);
-
-    useEffect(() => {
-        if (id) {
-            dispatch(fetchTaskById(id))
-                .unwrap()
-                .then(taskData => {
-                    if (taskData.rewardInfo) {
-                        setRewardInfo(taskData.rewardInfo);
-                    }
-                })
-                .catch(error => {
-                    showSnackbar(error.message || 'Failed to fetch task details', 'error');
-                });
-        }
-    }, [id, dispatch, showSnackbar]);
 
     const handleCommentSubmit = (e) => {
         e.preventDefault();
@@ -351,23 +347,27 @@ const TaskDetail = () => {
                             </Box>
                         </Box>
                         <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                component={Link}
-                                to={`/tasks/${id}/edit`}
-                                fullWidth={isMobile}
-                            >
-                                Edit Task
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                color="error"
-                                onClick={handleDelete}
-                                fullWidth={isMobile}
-                            >
-                                Delete Task
-                            </Button>
+                            {isAdmin && (
+                                <>
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        component={Link}
+                                        to={`/tasks/${id}/edit`}
+                                        fullWidth={isMobile}
+                                    >
+                                        Edit Task
+                                    </Button>
+                                    <Button
+                                        variant="outlined"
+                                        color="error"
+                                        onClick={handleDelete}
+                                        fullWidth={isMobile}
+                                    >
+                                        Delete Task
+                                    </Button>
+                                </>
+                            )}
                         </Box>
                     </Box>
 
@@ -473,6 +473,19 @@ const TaskDetail = () => {
                                             {taskDueDate ? format(taskDueDate, 'MMM dd, yyyy') : 'No due date'}
                                         </Typography>
                                     </Grid>
+                                    {canUpdateStatus && (
+                                        <Grid item xs={12}>
+                                            <Button
+                                                variant="contained"
+                                                color="primary"
+                                                onClick={handleStatusUpdate}
+                                                fullWidth
+                                                startIcon={<UpdateIcon />}
+                                            >
+                                                Update Status
+                                            </Button>
+                                        </Grid>
+                                    )}
                                 </Grid>
                             </Paper>
 

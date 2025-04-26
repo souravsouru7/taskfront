@@ -354,13 +354,15 @@ const EmployeeDashboard = () => {
                       bgcolor: new Date(task.dueDate) < new Date() && task.status !== 'completed' ? 'error.50' : 'inherit' 
                     }}
                     secondaryAction={
-                      <IconButton 
-                        edge="end" 
-                        aria-label="task options"
-                        onClick={(e) => handleMenuOpen(e, task)}
-                      >
-                        <MoreVertIcon />
-                      </IconButton>
+                      <Tooltip title="Update task status">
+                        <IconButton 
+                          edge="end" 
+                          aria-label="task options"
+                          onClick={(e) => handleMenuOpen(e, task)}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      </Tooltip>
                     }
                   >
                     <ListItemText

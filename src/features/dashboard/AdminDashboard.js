@@ -818,10 +818,10 @@ const AdminDashboard = () => {
                           />
                         </TableCell>
                         <TableCell>
-                          {project.tasks?.length || 0} tasks
+                          {tasks.filter(task => task.project?._id === project._id).length} tasks
                         </TableCell>
                         <TableCell>
-                          {new Date(project.dueDate).toLocaleDateString()}
+                          {project.endDate ? new Date(project.endDate).toLocaleDateString() : 'No due date'}
                         </TableCell>
                         <TableCell>
                           <Box display="flex">

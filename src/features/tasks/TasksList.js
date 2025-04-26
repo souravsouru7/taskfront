@@ -293,22 +293,26 @@ const TasksList = () => {
                                     >
                                         View
                                     </Button>
-                                    <Button
-                                        size="small"
-                                        component={Link}
-                                        to={`/tasks/${task._id}/edit`}
-                                        startIcon={<EditIcon />}
-                                    >
-                                        Edit
-                                    </Button>
-                                    <Button
-                                        size="small"
-                                        color="error"
-                                        onClick={() => handleDelete(task)}
-                                        startIcon={<DeleteIcon />}
-                                    >
-                                        Delete
-                                    </Button>
+                                    {isAdmin && (
+                                        <>
+                                            <Button
+                                                size="small"
+                                                component={Link}
+                                                to={`/tasks/${task._id}/edit`}
+                                                startIcon={<EditIcon />}
+                                            >
+                                                Edit
+                                            </Button>
+                                            <Button
+                                                size="small"
+                                                color="error"
+                                                onClick={() => handleDelete(task)}
+                                                startIcon={<DeleteIcon />}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </>
+                                    )}
                                 </CardActions>
                             </Card>
                         ))
@@ -386,20 +390,24 @@ const TasksList = () => {
                                             >
                                                 <ViewIcon />
                                             </IconButton>
-                                            <IconButton
-                                                component={Link}
-                                                to={`/tasks/${task._id}/edit`}
-                                                size="small"
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                            <IconButton
-                                                onClick={() => handleDelete(task)}
-                                                size="small"
-                                                color="error"
-                                            >
-                                                <DeleteIcon />
-                                            </IconButton>
+                                            {isAdmin && (
+                                                <>
+                                                    <IconButton
+                                                        component={Link}
+                                                        to={`/tasks/${task._id}/edit`}
+                                                        size="small"
+                                                    >
+                                                        <EditIcon />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        onClick={() => handleDelete(task)}
+                                                        size="small"
+                                                        color="error"
+                                                    >
+                                                        <DeleteIcon />
+                                                    </IconButton>
+                                                </>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ))
