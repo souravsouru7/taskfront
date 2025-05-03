@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'https://api.bakerycrm.shop/api',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
