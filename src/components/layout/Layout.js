@@ -29,6 +29,7 @@ import {
   EmojiEvents as LeaderboardIcon,
 } from '@mui/icons-material';
 import { logout } from '../../features/auth/authSlice';
+import { Notifications } from '../../features/notifications';
 
 const drawerWidth = 240;
 
@@ -138,6 +139,7 @@ const Layout = () => {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             {menuItems.find(item => item.path === window.location.pathname)?.text || 'TaskMan'}
           </Typography>
+          <Notifications />
           <IconButton
             onClick={handleMenuOpen}
             size="small"

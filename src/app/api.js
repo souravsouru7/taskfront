@@ -2,12 +2,12 @@ import axios from 'axios';
 
 // Create axios instance
 const API = axios.create({
-  baseURL: 'https://api.bakerycrm.shop/api',
+  baseURL: 'http://localhost:5000/api',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 30000, // Increased timeout to 30 seconds
+  timeout: 30000, 
   withCredentials: true
 });
 
@@ -80,5 +80,18 @@ API.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+const formatNotificationMessage = (notification) => {
+    const actorName = notification.actor?.name || 'Unknown User';
+    
+    switch (notification.type) {
+        case 'comment':
+            return `${actorName} commented on a task`;
+        case 'task':
+            return `${actorName} assigned you a task`;
+        default:
+            return notification.message;
+    }
+};
 
 export default API; 

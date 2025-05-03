@@ -140,22 +140,14 @@ export const deleteTask = createAsyncThunk(
 );
 
 // Add comment to task
-export const addTaskComment = createAsyncThunk(
-    'tasks/addTaskComment',
-    async ({ id, text }, { rejectWithValue }) => {
+export const addComment = createAsyncThunk(
+    'tasks/addComment',
+    async ({ taskId, text }, { rejectWithValue, getState }) => {
         try {
-            const response = await API.post(`/tasks/${id}/comments`, { text });
+            const response = await API.post(`/tasks/${taskId}/comments`, { text });
             return response.data;
         } catch (err) {
-            let errorMessage = 'Failed to add comment';
-            
-            if (err.response?.data?.message) {
-                errorMessage = err.response.data.message;
-            } else if (err.message) {
-                errorMessage = err.message;
-            }
-            
-            return rejectWithValue({ message: errorMessage });
+            return rejectWithValue(err.response?.data?.message || 'Failed to add comment');
         }
     }
 );
@@ -331,16 +323,16 @@ const tasksSlice = createSlice({
                 state.error = action.payload.message;
             })
             // Add comment
-            .addCase(addTaskComment.pending, (state) => {
+            .addCase(addComment.pending, (state) => {
                 state.status = 'loading';
             })
-            .addCase(addTaskComment.fulfilled, (state, action) => {
+            .addCase(addComment.fulfilled, (state, action) => {
                 state.status = 'succeeded';
                 if (state.currentTask?._id === action.payload._id) {
                     state.currentTask = action.payload;
                 }
             })
-            .addCase(addTaskComment.rejected, (state, action) => {
+            .addCase(addComment.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload.message;
             })

@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { fetchTaskById, addTaskComment, deleteTask, updateTaskStatus, fetchUserRewards } from './tasksSlice';
-import { addNotification } from '../notifications/notificationsSlice';
+import { fetchTaskById, addComment, deleteTask, updateTaskStatus, fetchUserRewards } from './tasksSlice';
 import {
     Box,
     Typography,
@@ -143,11 +142,24 @@ const TaskDetail = () => {
         }
     }, [currentTask]);
 
-    const handleCommentSubmit = (e) => {
+    const handleCommentSubmit = async (e) => {
         e.preventDefault();
-        if (commentText.trim()) {
-            dispatch(addTaskComment({ id, text: commentText }));
+        if (!commentText.trim()) return;
+
+        try {
+            await dispatch(addComment({ taskId: id, text: commentText })).unwrap();
             setCommentText('');
+            setSnackbar({
+                open: true,
+                message: 'Comment added successfully',
+                severity: 'success'
+            });
+        } catch (error) {
+            setSnackbar({
+                open: true,
+                message: error.message || 'Failed to add comment',
+                severity: 'error'
+            });
         }
     };
 
@@ -210,17 +222,6 @@ const TaskDetail = () => {
                 }
             }
 
-            // Create notification for admin when task is completed
-            if (newStatus === 'completed') {
-                dispatch(addNotification({
-                    type: 'task_completed',
-                    message: `Task "${currentTask.title}" was completed by ${user.name}`,
-                    read: false,
-                    createdAt: new Date().toISOString(),
-                    _id: Date.now().toString() // Temporary ID until backend assigns one
-                }));
-            }
-            
             showSnackbar(message, severity);
             setStatusDialogOpen(false);
             setStatusUpdateDialog({ ...statusUpdateDialog, open: false });
