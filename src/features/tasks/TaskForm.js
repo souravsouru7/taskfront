@@ -118,6 +118,33 @@ const TaskForm = () => {
         }
     });
 
+    // Format date for input field
+    const formatDateForInput = (date) => {
+        if (!date) return '';
+        const d = new Date(date);
+        return d.toISOString().split('T')[0];
+    };
+
+    // Format date for display
+    const formatDateForDisplay = (date) => {
+        if (!date) return '';
+        const d = new Date(date);
+        return d.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    };
+
+    // Handle date change for DatePicker
+    const handleDateChange = (date) => {
+        if (date) {
+            // Set time to end of day (23:59:59) to ensure full day is included
+            date.setHours(23, 59, 59, 999);
+            formik.setFieldValue('dueDate', date.toISOString());
+        }
+    };
+
     if (status === 'loading' && isEditing) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -256,8 +283,8 @@ const TaskForm = () => {
                             <LocalizationProvider dateAdapter={AdapterDateFns}>
                                 <DatePicker
                                     label="Due Date"
-                                    value={formik.values.dueDate}
-                                    onChange={(date) => formik.setFieldValue('dueDate', date)}
+                                    value={formik.values.dueDate ? new Date(formik.values.dueDate) : null}
+                                    onChange={handleDateChange}
                                     renderInput={(params) => (
                                         <TextField
                                             {...params}

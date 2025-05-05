@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { fetchTaskById, addComment, deleteTask, updateTaskStatus, fetchUserRewards } from './tasksSlice';
+import { fetchTaskById, addComment, deleteTask, updateTaskStatus, fetchUserRewards, requestTaskExtension, fetchExtensionRequest } from './tasksSlice';
 import {
     Box,
     Typography,
@@ -73,6 +73,10 @@ const TaskDetail = () => {
         newStatus: '',
         potentialReward: null
     });
+    const [showExtensionModal, setShowExtensionModal] = useState(false);
+    const [extensionReason, setExtensionReason] = useState('');
+    const [newDueDate, setNewDueDate] = useState('');
+    const [extensionError, setExtensionError] = useState('');
 
     // Add loading state
     const isLoading = status === 'loading' || !currentTask;
@@ -274,6 +278,39 @@ const TaskDetail = () => {
     // Only assigned users or admins can update status
     const canUpdateStatus = isAssignedToTask || isAdmin;
 
+    const handleRequestExtension = async () => {
+        if (!extensionReason || !newDueDate) {
+            setExtensionError('Please provide both reason and new due date');
+            return;
+        }
+
+        try {
+            await dispatch(requestTaskExtension({
+                taskId: id,
+                reason: extensionReason,
+                newDueDate
+            })).unwrap();
+            setShowExtensionModal(false);
+            setExtensionReason('');
+            setNewDueDate('');
+            setExtensionError('');
+            dispatch(fetchTaskById(id)); // Refresh task details
+        } catch (error) {
+            setExtensionError(error.message);
+        }
+    };
+
+    // Format date for display
+    const formatDateForDisplay = (date) => {
+        if (!date) return 'Not set';
+        const d = new Date(date);
+        return d.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    };
+
     if (isLoading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -471,7 +508,7 @@ const TaskDetail = () => {
                                             </Typography>
                                         </Box>
                                         <Typography variant="body1">
-                                            {taskDueDate ? format(taskDueDate, 'MMM dd, yyyy') : 'No due date'}
+                                            {formatDateForDisplay(taskDueDate)}
                                         </Typography>
                                     </Grid>
                                     {canUpdateStatus && (
@@ -609,6 +646,94 @@ const TaskDetail = () => {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
+
+            {/* Extension Request Section */}
+            {currentTask && (
+                <Paper sx={{ p: { xs: 2, sm: 3 }, mt: 3 }}>
+                    <Typography variant="h6" gutterBottom>
+                        Extension Request
+                    </Typography>
+                    
+                    {/* Show extension request button for assigned users */}
+                    {taskAssignedTo?._id === user._id && !currentTask.extensionRequest?.requested && (
+                        <Button
+                            variant="contained"
+                            color="warning"
+                            onClick={() => setShowExtensionModal(true)}
+                            startIcon={<AccessTimeIcon />}
+                            sx={{ mb: 2 }}
+                        >
+                            Request Extension
+                        </Button>
+                    )}
+
+                    {/* Show extension request status */}
+                    {currentTask.extensionRequest?.requested && (
+                        <Box>
+                            <Typography variant="subtitle1" gutterBottom>
+                                Status: {currentTask.extensionRequest.status}
+                            </Typography>
+                            <Typography variant="body1" gutterBottom>
+                                Reason: {currentTask.extensionRequest.reason}
+                            </Typography>
+                            <Typography variant="body1" gutterBottom>
+                                Requested New Due Date: {formatDateForDisplay(currentTask.extensionRequest.newDueDate)}
+                            </Typography>
+                            {currentTask.extensionRequest.status === 'approved' && (
+                                <Typography variant="body1" color="success.main">
+                                    New Due Date: {formatDateForDisplay(currentTask.dueDate)}
+                                </Typography>
+                            )}
+                        </Box>
+                    )}
+                </Paper>
+            )}
+
+            {/* Extension Request Modal */}
+            <Dialog
+                open={showExtensionModal}
+                onClose={() => setShowExtensionModal(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Request Task Extension</DialogTitle>
+                <DialogContent>
+                    {extensionError && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {extensionError}
+                        </Alert>
+                    )}
+                    <TextField
+                        fullWidth
+                        margin="normal"
+                        label="Reason for Extension"
+                        value={extensionReason}
+                        onChange={(e) => setExtensionReason(e.target.value)}
+                        multiline
+                        rows={4}
+                        required
+                    />
+                    <TextField
+                        fullWidth
+                        margin="normal"
+                        label="New Due Date"
+                        type="date"
+                        value={newDueDate}
+                        onChange={(e) => setNewDueDate(e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                        required
+                        inputProps={{
+                            min: new Date().toISOString().split('T')[0]
+                        }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowExtensionModal(false)}>Cancel</Button>
+                    <Button onClick={handleRequestExtension} variant="contained" color="primary">
+                        Submit Request
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

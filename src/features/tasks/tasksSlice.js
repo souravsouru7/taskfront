@@ -215,6 +215,75 @@ export const fetchLeaderboard = createAsyncThunk(
     }
 );
 
+// Request task extension
+export const requestTaskExtension = createAsyncThunk(
+    'tasks/requestTaskExtension',
+    async ({ taskId, reason, newDueDate }, { rejectWithValue }) => {
+        try {
+            const response = await API.post(`/tasks/${taskId}/extension-request`, {
+                reason,
+                newDueDate
+            });
+            return response.data;
+        } catch (err) {
+            let errorMessage = 'Failed to request task extension';
+            
+            if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+            
+            return rejectWithValue({ message: errorMessage });
+        }
+    }
+);
+
+// Handle extension request (Admin only)
+export const handleExtensionRequest = createAsyncThunk(
+    'tasks/handleExtensionRequest',
+    async ({ taskId, status, newDueDate }, { rejectWithValue }) => {
+        try {
+            const response = await API.patch(`/tasks/${taskId}/extension-request`, {
+                status,
+                newDueDate
+            });
+            return response.data;
+        } catch (err) {
+            let errorMessage = 'Failed to handle extension request';
+            
+            if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+            
+            return rejectWithValue({ message: errorMessage });
+        }
+    }
+);
+
+// Get extension request status
+export const fetchExtensionRequest = createAsyncThunk(
+    'tasks/fetchExtensionRequest',
+    async (taskId, { rejectWithValue }) => {
+        try {
+            const response = await API.get(`/tasks/${taskId}/extension-request`);
+            return response.data;
+        } catch (err) {
+            let errorMessage = 'Failed to fetch extension request';
+            
+            if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+            
+            return rejectWithValue({ message: errorMessage });
+        }
+    }
+);
+
 const initialState = {
     tasks: [],
     currentTask: null,
@@ -380,6 +449,60 @@ const tasksSlice = createSlice({
                 state.leaderboard = action.payload;
             })
             .addCase(fetchLeaderboard.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload.message;
+            })
+            // Request task extension
+            .addCase(requestTaskExtension.pending, (state) => {
+                state.status = 'loading';
+            })
+            .addCase(requestTaskExtension.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                const index = state.tasks.findIndex(task => task._id === action.payload.task._id);
+                if (index !== -1) {
+                    state.tasks[index] = action.payload.task;
+                }
+                if (state.currentTask?._id === action.payload.task._id) {
+                    state.currentTask = action.payload.task;
+                }
+            })
+            .addCase(requestTaskExtension.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload.message;
+            })
+            // Handle extension request
+            .addCase(handleExtensionRequest.pending, (state) => {
+                state.status = 'loading';
+            })
+            .addCase(handleExtensionRequest.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                const index = state.tasks.findIndex(task => task._id === action.payload.task._id);
+                if (index !== -1) {
+                    state.tasks[index] = action.payload.task;
+                }
+                if (state.currentTask?._id === action.payload.task._id) {
+                    state.currentTask = action.payload.task;
+                }
+            })
+            .addCase(handleExtensionRequest.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload.message;
+            })
+            // Fetch extension request
+            .addCase(fetchExtensionRequest.pending, (state) => {
+                state.status = 'loading';
+            })
+            .addCase(fetchExtensionRequest.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                const index = state.tasks.findIndex(task => task._id === action.payload.task._id);
+                if (index !== -1) {
+                    state.tasks[index].extensionRequest = action.payload.extensionRequest;
+                }
+                if (state.currentTask?._id === action.payload.task._id) {
+                    state.currentTask.extensionRequest = action.payload.extensionRequest;
+                }
+            })
+            .addCase(fetchExtensionRequest.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload.message;
             });

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import {
@@ -33,6 +33,8 @@ import {
   DialogContent,
   DialogActions,
   ListItemSecondary,
+  Alert,
+  TextField,
 } from '@mui/material';
 import {
   People as PeopleIcon,
@@ -51,7 +53,7 @@ import {
 
 import { fetchProjects } from '../projects/projectSlice';
 import { fetchUsers } from '../users/userSlice';
-import { fetchTasks } from '../tasks/tasksSlice';
+import { fetchTasks, deleteTask, updateTask, handleExtensionRequest, fetchExtensionRequest } from '../tasks/tasksSlice';
 
 const StatCard = ({ title, value, icon, color, trend, onClick }) => (
   <Card 
@@ -616,6 +618,10 @@ const AdminDashboard = () => {
   const [teamMembersDialogOpen, setTeamMembersDialogOpen] = React.useState(false);
   const [projectDetailsDialogOpen, setProjectDetailsDialogOpen] = React.useState(false);
   const [taskDetailsDialogOpen, setTaskDetailsDialogOpen] = React.useState(false);
+  const [showExtensionModal, setShowExtensionModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [newDueDate, setNewDueDate] = useState('');
+  const [extensionError, setExtensionError] = useState('');
 
   useEffect(() => {
     dispatch(fetchTasks());
@@ -695,6 +701,39 @@ const AdminDashboard = () => {
 
   const handleCloseTaskDetails = () => {
     setTaskDetailsDialogOpen(false);
+  };
+
+  const handleExtensionResponse = async (status) => {
+    if (status === 'approved' && !newDueDate) {
+      setExtensionError('Please provide a new due date when approving extension');
+      return;
+    }
+
+    try {
+      await dispatch(handleExtensionRequest({
+        taskId: selectedTask._id,
+        status,
+        newDueDate: status === 'approved' ? newDueDate : null
+      })).unwrap();
+      setShowExtensionModal(false);
+      setSelectedTask(null);
+      setNewDueDate('');
+      setExtensionError('');
+      dispatch(fetchTasks());
+    } catch (error) {
+      setExtensionError(error.message);
+    }
+  };
+
+  // Format date for display
+  const formatDateForDisplay = (date) => {
+    if (!date) return 'Not set';
+    const d = new Date(date);
+    return d.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   return (
@@ -884,8 +923,147 @@ const AdminDashboard = () => {
         open={taskDetailsDialogOpen}
         onClose={handleCloseTaskDetails}
       />
+
+      {/* Extension Request Modal */}
+      <Dialog
+        open={showExtensionModal}
+        onClose={() => {
+          setShowExtensionModal(false);
+          setSelectedTask(null);
+          setExtensionError('');
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Handle Extension Request</DialogTitle>
+        <DialogContent>
+          {extensionError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {extensionError}
+            </Alert>
+          )}
+          {selectedTask && selectedTask.extensionRequest && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Task: {selectedTask.title}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                Current Due Date: {formatDateForDisplay(selectedTask.dueDate)}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                Requested New Due Date: {formatDateForDisplay(selectedTask.extensionRequest.newDueDate)}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                Reason: {selectedTask.extensionRequest.reason}
+              </Typography>
+              {selectedTask.extensionRequest.status === 'pending' && (
+                <TextField
+                  fullWidth
+                  margin="normal"
+                  label="New Due Date (if approving)"
+                  type="date"
+                  value={newDueDate}
+                  onChange={(e) => setNewDueDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  required
+                  inputProps={{
+                    min: new Date(selectedTask.dueDate).toISOString().split('T')[0]
+                  }}
+                />
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => {
+              setShowExtensionModal(false);
+              setSelectedTask(null);
+              setExtensionError('');
+            }}
+          >
+            Cancel
+          </Button>
+          {selectedTask?.extensionRequest?.status === 'pending' && (
+            <>
+              <Button 
+                onClick={() => handleExtensionResponse('rejected')}
+                color="error"
+              >
+                Reject
+              </Button>
+              <Button 
+                onClick={() => handleExtensionResponse('approved')}
+                variant="contained"
+                color="success"
+                disabled={!newDueDate}
+              >
+                Approve
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Task List with Extension Indicators */}
+      <Grid container spacing={3}>
+        {tasks.map(task => (
+          <Grid item xs={12} key={task._id}>
+            <Card>
+              <CardContent>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Typography variant="h6">{task.title}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Due: {formatDateForDisplay(task.dueDate)}
+                    </Typography>
+                    {task.extensionRequest?.requested && (
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Extension Status: {task.extensionRequest.status}
+                        </Typography>
+                        {task.extensionRequest.status === 'approved' && (
+                          <Typography variant="body2" color="success.main">
+                            New Due Date: {formatDateForDisplay(task.dueDate)}
+                          </Typography>
+                        )}
+                      </Box>
+                    )}
+                  </Box>
+                  <Box>
+                    {task.extensionRequest?.requested && (
+                      <Chip
+                        label={`Extension ${task.extensionRequest.status}`}
+                        color={
+                          task.extensionRequest.status === 'approved' ? 'success' :
+                          task.extensionRequest.status === 'rejected' ? 'error' :
+                          'warning'
+                        }
+                        sx={{ mr: 1 }}
+                      />
+                    )}
+                    {task.extensionRequest?.status === 'pending' && (
+                      <Button
+                        variant="outlined"
+                        color="info"
+                        size="small"
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setShowExtensionModal(true);
+                        }}
+                      >
+                        Handle Request
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
     </Container>
   );
 };
 
-export default AdminDashboard; 
+export default AdminDashboard;
