@@ -655,7 +655,7 @@ const TaskDetail = () => {
                     </Typography>
                     
                     {/* Show extension request button for assigned users */}
-                    {taskAssignedTo?._id === user._id && !currentTask.extensionRequest?.requested && (
+                    {isAssignedToTask && !currentTask.extensionRequest?.requested && (
                         <Button
                             variant="contained"
                             color="warning"

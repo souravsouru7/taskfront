@@ -823,71 +823,59 @@ const AdminDashboard = () => {
           <Card>
             <CardContent>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h6">Projects Overview</Typography>
-                <Button
-                  component={Link}
-                  to="/projects"
-                  color="primary"
-                  size="small"
-                >
-                  View All
-                </Button>
+                <Typography variant="h6">Extension Requests</Typography>
               </Box>
               <TableContainer>
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Project Name</TableCell>
+                      <TableCell>Task Title</TableCell>
+                      <TableCell>Requested By</TableCell>
+                      <TableCell>Current Due Date</TableCell>
+                      <TableCell>Requested Due Date</TableCell>
+                      <TableCell>Reason</TableCell>
                       <TableCell>Status</TableCell>
-                      <TableCell>Tasks</TableCell>
-                      <TableCell>Due Date</TableCell>
-                      <TableCell>Team</TableCell>
                       <TableCell align="right">Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {projects.slice(0, 5).map((project) => (
-                      <TableRow key={project._id}>
-                        <TableCell>{project.name}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={project.status}
-                            color={project.status === 'active' ? 'success' : 'default'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {tasks.filter(task => task.project?._id === project._id).length} tasks
-                        </TableCell>
-                        <TableCell>
-                          {project.endDate ? new Date(project.endDate).toLocaleDateString() : 'No due date'}
-                        </TableCell>
-                        <TableCell>
-                          <Box display="flex">
-                            {project.team?.slice(0, 3).map((member) => (
-                              <Tooltip key={member._id} title={member.name}>
-                                <Avatar
-                                  sx={{ width: 32, height: 32, mr: -1 }}
-                                  src={member.avatar}
-                                >
-                                  {member.name.charAt(0)}
-                                </Avatar>
-                              </Tooltip>
-                            ))}
-                            {project.team?.length > 3 && (
-                              <Avatar sx={{ width: 32, height: 32, bgcolor: 'grey.300' }}>
-                                +{project.team.length - 3}
-                              </Avatar>
-                            )}
-                          </Box>
-                        </TableCell>
-                        <TableCell align="right">
-                          <IconButton size="small">
-                            <MoreVertIcon />
-                          </IconButton>
+                    {tasks
+                      .filter(task => task.extensionRequest?.requested && task.extensionRequest?.status === 'pending')
+                      .map((task) => (
+                        <TableRow key={task._id}>
+                          <TableCell>{task.title}</TableCell>
+                          <TableCell>{task.assignedTo?.name}</TableCell>
+                          <TableCell>{formatDateForDisplay(task.dueDate)}</TableCell>
+                          <TableCell>{formatDateForDisplay(task.extensionRequest?.newDueDate)}</TableCell>
+                          <TableCell>{task.extensionRequest?.reason}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={task.extensionRequest?.status}
+                              color="warning"
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Button
+                              size="small"
+                              color="primary"
+                              onClick={() => {
+                                setSelectedTask(task);
+                                setShowExtensionModal(true);
+                              }}
+                            >
+                              Review
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                    ))}
+                    {tasks.filter(task => task.extensionRequest?.requested && task.extensionRequest?.status === 'pending').length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center">
+                          No pending extension requests
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -930,48 +918,49 @@ const AdminDashboard = () => {
         onClose={() => {
           setShowExtensionModal(false);
           setSelectedTask(null);
+          setNewDueDate('');
           setExtensionError('');
         }}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Handle Extension Request</DialogTitle>
+        <DialogTitle>Review Extension Request</DialogTitle>
         <DialogContent>
           {extensionError && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {extensionError}
             </Alert>
           )}
-          {selectedTask && selectedTask.extensionRequest && (
-            <Box sx={{ mt: 2 }}>
+          {selectedTask && (
+            <>
               <Typography variant="subtitle1" gutterBottom>
                 Task: {selectedTask.title}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                Requested by: {selectedTask.assignedTo?.name}
               </Typography>
               <Typography variant="body1" gutterBottom>
                 Current Due Date: {formatDateForDisplay(selectedTask.dueDate)}
               </Typography>
               <Typography variant="body1" gutterBottom>
-                Requested New Due Date: {formatDateForDisplay(selectedTask.extensionRequest.newDueDate)}
+                Requested Due Date: {formatDateForDisplay(selectedTask.extensionRequest?.newDueDate)}
               </Typography>
               <Typography variant="body1" gutterBottom>
-                Reason: {selectedTask.extensionRequest.reason}
+                Reason: {selectedTask.extensionRequest?.reason}
               </Typography>
-              {selectedTask.extensionRequest.status === 'pending' && (
-                <TextField
-                  fullWidth
-                  margin="normal"
-                  label="New Due Date (if approving)"
-                  type="date"
-                  value={newDueDate}
-                  onChange={(e) => setNewDueDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  required
-                  inputProps={{
-                    min: new Date(selectedTask.dueDate).toISOString().split('T')[0]
-                  }}
-                />
-              )}
-            </Box>
+              <TextField
+                fullWidth
+                margin="normal"
+                label="New Due Date (if approving)"
+                type="date"
+                value={newDueDate}
+                onChange={(e) => setNewDueDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                inputProps={{
+                  min: new Date().toISOString().split('T')[0]
+                }}
+              />
+            </>
           )}
         </DialogContent>
         <DialogActions>
@@ -979,29 +968,26 @@ const AdminDashboard = () => {
             onClick={() => {
               setShowExtensionModal(false);
               setSelectedTask(null);
+              setNewDueDate('');
               setExtensionError('');
             }}
           >
             Cancel
           </Button>
-          {selectedTask?.extensionRequest?.status === 'pending' && (
-            <>
-              <Button 
-                onClick={() => handleExtensionResponse('rejected')}
-                color="error"
-              >
-                Reject
-              </Button>
-              <Button 
-                onClick={() => handleExtensionResponse('approved')}
-                variant="contained"
-                color="success"
-                disabled={!newDueDate}
-              >
-                Approve
-              </Button>
-            </>
-          )}
+          <Button 
+            onClick={() => handleExtensionResponse('rejected')}
+            color="error"
+            variant="outlined"
+          >
+            Reject
+          </Button>
+          <Button 
+            onClick={() => handleExtensionResponse('approved')}
+            color="success"
+            variant="contained"
+          >
+            Approve
+          </Button>
         </DialogActions>
       </Dialog>
 
